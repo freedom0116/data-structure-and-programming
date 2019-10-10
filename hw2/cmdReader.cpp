@@ -25,7 +25,6 @@ ParseChar getChar(istream&);
 void
 CmdParser::readCmd()
 {
-
    if (_dofile.is_open()) {
       readCmdInt(_dofile);
       _dofile.close();
@@ -47,6 +46,7 @@ CmdParser::readCmdInt(istream& istr)
          case LINE_END_KEY   :
          case END_KEY        : moveBufPtr(_readBufEnd); break;
          case BACK_SPACE_KEY :
+         {
             if(_readBufPtr == _readBuf){
                mybeep();
             }else{
@@ -55,28 +55,15 @@ CmdParser::readCmdInt(istream& istr)
                deleteChar();
             }
             break;
+         }
          case DELETE_KEY     : deleteChar(); break;
          case NEWLINE_KEY    : addHistory();
                                cout << char(NEWLINE_KEY);
                                resetBufAndPrintPrompt(); break;
          case ARROW_UP_KEY   : moveToHistory(_historyIdx - 1); break;
          case ARROW_DOWN_KEY : moveToHistory(_historyIdx + 1); break;
-         case ARROW_RIGHT_KEY: 
-            if(_readBufPtr != _readBufEnd){
-               cout << *_readBufPtr;
-               _readBufPtr += 1;
-            }else{
-               mybeep();
-            }
-            break;
-         case ARROW_LEFT_KEY : 
-            if(_readBufPtr != _readBuf){
-               cout << '\b';
-               _readBufPtr -= 1;
-            }else{
-               mybeep();
-            }
-            break;
+         case ARROW_RIGHT_KEY: moveBufPtr(_readBufPtr + 1); break;
+         case ARROW_LEFT_KEY : moveBufPtr(_readBufPtr - 1); break;
          case PG_UP_KEY      : moveToHistory(_historyIdx - PG_OFFSET); break;
          case PG_DOWN_KEY    : moveToHistory(_historyIdx + PG_OFFSET); break;
          case TAB_KEY        :
@@ -124,32 +111,41 @@ CmdParser::moveBufPtr(char* const ptr)
    // TODO...
    if(ptr == _readBuf){
       if(_readBufPtr != _readBuf){
-         while(true){
+         while(_readBufPtr != _readBuf){
             cout << '\b';
-            if(_readBufPtr == _readBuf){
-               break;
-            }
             _readBufPtr -= 1;
          }
          _readBufPtr = _readBuf;
       }
-      else{ 
+   }
+   else if(ptr == _readBufEnd){
+      while(_readBufPtr != _readBufEnd){
+         cout << *_readBufPtr;
+         _readBufPtr += 1;
+      }
+      _readBufPtr = _readBufEnd;
+   }
+   else if(ptr == _readBufPtr - 1){
+      if(_readBufPtr != _readBuf){
+         cout << '\b';
+         _readBufPtr -= 1;
+      }else{
          mybeep();
          return false;
       }
    }
-   else if(ptr == _readBufEnd){
+   else if(ptr == _readBufPtr + 1){
       if(_readBufPtr != _readBufEnd){
-         _readBufPtr = _readBufEnd;
-         cout << _readBuf;
-      }
-      else{ 
+         cout << *_readBufPtr;
+         _readBufPtr += 1;
+      }else{
          mybeep();
          return false;
       }
    }
    return true;
 }
+
 
 
 // [Notes]
