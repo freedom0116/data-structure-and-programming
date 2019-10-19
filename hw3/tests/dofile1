@@ -1,0 +1,2 @@
+dbread tests/test1.json
+DBprint
