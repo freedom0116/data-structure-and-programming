@@ -19,7 +19,7 @@ using namespace std;
 //    External funcitons
 //----------------------------------------------------------------------
 void mybeep();
-
+vector<int> _end, _cur;
 
 //----------------------------------------------------------------------
 //    Member Function for class cmdParser
@@ -32,18 +32,25 @@ CmdParser::openDofile(const string& dof)
    // TODO...
    _dofile = new ifstream(dof.c_str());
    _dofileStack.push(_dofile);
-   
    //find eof
-   _dofile->seekg(0,ios::end);
-   int filelen = _dofile->tellg();
-   _dofile->seekg(0,ios::beg);
-   
+   _dofile->seekg(0,ios::end); //go to position to 0 before the end of _dofile
+   _end.push_back(_dofile->tellg()); //set the end position
+   _dofile->seekg(0,ios::beg); // go back to opsition to 0 after the begin of _dofile
+   _cur.push_back(_dofile->tellg());
 
-   while(_dofile->tellg() != filelen){
+   while(_dofile->tellg() != _end[_end.size()-1]){
+      _cur[_end.size()-1] = _dofile->tellg();
       execOneCmd();
+      cout << endl;
+      _dofile = _dofileStack.top();
+      _dofile->tellg() = _cur[_end.size()-1];
    }
+
+   _cur.pop_back();
+   _end.pop_back();
    _dofileStack.pop();
-   if(_dofileStack.empty()) closeDofile();
+   if(_dofileStack.empty() == true) 
+      closeDofile();
    return true;
 }
 

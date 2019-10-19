@@ -1,2 +1,3 @@
 dbread tests/test1.json
-DBprint
+dofile tests/dofile2
+dbprInt
