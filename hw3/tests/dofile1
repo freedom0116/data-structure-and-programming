@@ -1,3 +1,0 @@
-dbread tests/test1.json
-dofile tests/dofile2
-dbprInt

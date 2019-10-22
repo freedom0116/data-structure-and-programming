@@ -100,7 +100,7 @@ DBJson::ave() const
    if(_obj.empty())
       return avg;
    else{
-      int total = 0;
+      float  total = 0;
       for(int i = 0, n = _obj.size(); i < n; i++){
          total += _obj[i].value();
       }

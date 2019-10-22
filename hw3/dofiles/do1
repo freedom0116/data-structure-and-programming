@@ -1,4 +1,4 @@
-dbr ../tests/test1.json
+dbr tests/test1.json
 dbp
 dbap Mary 30
 dbap Mary 30

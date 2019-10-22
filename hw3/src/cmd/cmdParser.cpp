@@ -4,12 +4,45 @@
   Synopsis     [ Define command parsing member functions for class CmdParser ]
   Author       [ Chung-Yang (Ric) Huang ]
   Copyright    [ Copyleft(c) 2007-present LaDs(III), GIEE, NTU, Taiwan ]
-****************************************************************************/
+****************************************************************_readBufPtr = _readBufEnd;
+               while(true){ // Ptr move to first
+                  *_readBufPtr = '\0';
+                  if(_readBufPtr == _readBuf){
+                     cout << " ";
+                     break;
+                  }
+                  cout << " " << '\b' << '\b';
+                  _readBufPtr -= 1;
+               }
+               _readBufPtr = _readBufEnd = _readBuf;
+               *_readBufPtr = 0;
+               for(int i = 0; i < strs[0].size(); i++){ // print
+                  cout << strs[0][i];
+                  *_readBufPtr = strs[0][i];
+                  _readBufPtr += 1;
+                  _readBufEnd += 1;
+               }
+               cout << " ";
+               *_readBufPtr = ' ';
+               _readBufPtr += 1;
+               _readBufEnd += 1;
+               for(int i = 0, n = filenames[0].size(); i < n; i++){
+                  *_readBufPtr = filenames[0][i];
+                  cout << filenames[0][i];
+                  _readBufPtr += 1;
+                  _readBufEnd += 1;
+               }
+               cout << " ";
+               *_readBufPtr = ' ';
+               _readBufPtr += 1;
+               _readBufEnd += 1;************/
 #include <cassert>
 #include <iostream>
 #include <iomanip>
 #include <cstdlib>
 #include <stdio.h>
+#include <sys/types.h>  // these use as show filename
+#include <dirent.h>     //
 #include "util.h"
 #include "cmdParser.h"
 
@@ -21,6 +54,18 @@ using namespace std;
 void mybeep();
 vector<int> _end, _cur;
 
+void rePrint(char*& ptr, char*& end, vector<char> origin, int ptrpos){
+   for(int i = 0, n = origin.size(); i < n; i++){
+      *end = origin[i];
+      cout << origin[i];
+      ptr += 1;
+      end += 1;
+   }
+   for(int i = 0, n = (origin.size() - ptrpos); i < n; i++){
+      cout << '\b';
+      ptr -= 1;
+   }
+}
 //----------------------------------------------------------------------
 //    Member Function for class cmdParser
 //----------------------------------------------------------------------
@@ -32,26 +77,30 @@ CmdParser::openDofile(const string& dof)
    // TODO...
    _dofile = new ifstream(dof.c_str());
    _dofileStack.push(_dofile);
-   //find eof
-   _dofile->seekg(0,ios::end); //go to position to 0 before the end of _dofile
-   _end.push_back(_dofile->tellg()); //set the end position
-   _dofile->seekg(0,ios::beg); // go back to opsition to 0 after the begin of _dofile
+   if(!(*_dofile)){
+      closeDofile();
+      return false;
+   }
+   if(_dofileStack.size() >1024){
+      closeDofile();
+      return false;
+   }
+   return true;
+/*   //find eof
+   _dofile->seekg(0,ios::end);       // go to position to 0 before the end of _dofile
+   _end.push_back(_dofile->tellg()); // set the end position
+   _dofile->seekg(0,ios::beg);       // go back to opsition to 0 after the begin of _dofile
    _cur.push_back(_dofile->tellg());
 
    while(_dofile->tellg() != _end[_end.size()-1]){
       _cur[_end.size()-1] = _dofile->tellg();
       execOneCmd();
-      cout << endl;
       _dofile = _dofileStack.top();
       _dofile->tellg() = _cur[_end.size()-1];
    }
-
    _cur.pop_back();
    _end.pop_back();
-   _dofileStack.pop();
-   if(_dofileStack.empty() == true) 
-      closeDofile();
-   return true;
+   _dofileStack.pop();*/
 }
 
 // Must make sure _dofile != 0
@@ -60,8 +109,8 @@ CmdParser::closeDofile()
 {
    assert(_dofile != 0);
    // TODO...
-   _dofile = 0;
    delete _dofile;
+   _dofile = 0;
 }
 
 // Return false if registration fails
@@ -171,7 +220,7 @@ CmdParser::parseCmd(string& option)
       CmdExec* e = getCmd(str);
       if(e == 0){
          cerr << "Illegal command!! (" << cmd << ")" << endl;
-         return _cmdMap.end()->second;         
+         return e = 0;         
       }
       return e;
    }
@@ -183,7 +232,7 @@ CmdParser::parseCmd(string& option)
       return e;
    }else{
       cerr << "Illegal command!! (" << cmd << ")" << endl;
-      return _cmdMap.end()->second;
+      return e = 0;
    }
    assert(str[0] != 0 && str[0] != ' ');
    return NULL;
@@ -266,7 +315,7 @@ CmdParser::parseCmd(string& option)
 // 6. FIRST WORD ALREADY MATCHED ON SECOND AND LATER TAB PRESSING
 //    ==> Note: command usage has been printed under first tab press
 //    ==> Check the word the cursor is at; get the prefix before the cursor
-//    ==> So, this is to list the file names under current directory that
+//    ==> So, this ise] Cursor to list the file names under current directory that
 //        match the prefix
 //    ==> List all the matched file names alphabetically by:
 //           cout << setw(16) << left << fileName;
@@ -340,6 +389,296 @@ void
 CmdParser::listCmd(const string& str)
 {
    // TODO...
+   // not finish yet
+   int option = 1;
+   int cmdsize = 13;
+   string cmd[13] = { "DBAPpend", "DBAve", "DBCount", "DBMAx", "DBMIn",
+   "DBPrint", "DBRead", "DBSOrt", "DBSUm", "DOfile", "HELp", "HIStory", "Quit" };
+   
+   // 1
+   for(int i = 0; i < str.size(); i++){
+      if(str[i] != ' '){
+         option = 0;
+         break;
+      }
+   }
+   // manage date
+   vector<string> strs;
+   string token;
+   size_t n = myStrGetTok(str, token);   
+   if (n == string::npos) strs.push_back(str);
+   else{
+      strs.push_back(token);
+      string str2 = str.substr(n+1, str.length()-1);
+      strs.push_back(str2);
+   }
+   // store data for reprint
+   vector<char> origin;
+   int ptrpos, cou = 0;
+   while((_readBuf + cou) != _readBufEnd){ // store the date for re-print command
+      origin.push_back(*(_readBuf + cou));
+      cou++;
+      if((_readBuf + cou) == _readBufPtr) {
+         ptrpos = cou;
+      }
+   }
+   // 2,3,4
+   vector<int> match;
+   vector<string> filenames;
+   if(option == 0){
+      for(int i = 0; i < cmdsize; i++){
+         char c, f;
+         for(int j = 0, n = cmd[i].size(); j < n; j++){
+            isupper(strs[0][j])? c = tolower(strs[0][j]) : c = strs[0][j];
+            isupper(cmd[i][j])? f = tolower(cmd[i][j]) : f = cmd[i][j];
+            if(c != f) break;
+            if(j == strs[0].size() - 1){
+               if(strs[0].size() == cmd[i].size()) option = 5;
+               match.push_back(i); // input matched command into output array
+               break;
+            }
+         }
+      }
+      if(option == 5){
+         if(_tabPressCount > 1){
+            string filepath = "/home/freedom0116/Desktop/mytest"; // "."
+            vector<string> files;
+            DIR *dp; // 創立資料夾指標
+            struct dirent *dirp;
+            dp = opendir(filepath.c_str());
+            while((dirp = readdir(dp)) != NULL){ // 如果dirent指標非空
+               filenames.push_back(string(dirp->d_name)); // 將資料夾和檔案名放入vector
+            }
+            closedir(dp);
+            if(*(_readBufPtr - 1) == ' ')
+               option = 61;
+            else{
+               option = 62; 
+            }
+         }
+      }
+      else if(match.size() == 0) option = 4;
+      else if(match.size() == 1 && option == 0){
+         option = 3;
+      }else{
+         option = 2;
+      }
+   }
+   switch(option){
+      case 1:{
+         cout << endl;
+         for(int i = 0; i < cmdsize; i++){
+            cout << setw(12) << left << cmd[i];
+            if(i%5 == 4 && i != (n - 1)) cout << endl;
+         }
+         cout << endl; cout << endl;
+         resetBufAndPrintPrompt();
+         rePrint(_readBufPtr, _readBufEnd, origin, ptrpos);
+         break;
+      }
+      case 2:{
+         cout << endl;
+         for(int i = 0, n = match.size(); i < n; i++){
+            cout << setw(12) << left << cmd[match[i]];
+            if(i%5 == 4 && i != n - 1) cout << endl;
+         }
+         cout << endl; cout << endl;
+         resetBufAndPrintPrompt();
+         rePrint(_readBufPtr, _readBufEnd, origin, ptrpos);
+         break;
+      }
+      case 3:{
+         for(int i = 0, n = cmd[match[0]].size() - strs[0].size(); i <= n; i++){
+            int c = 0;
+            while((_readBufEnd - c) != _readBufPtr){
+               *(_readBufEnd - c) = *(_readBufEnd - c -1);
+               c++;
+               if((_readBufEnd - c) == _readBufPtr) 
+                  *(_readBufEnd - c) = *(_readBufEnd - c -1);
+            }
+            if(i == n){
+               *(_readBufEnd - c) = ' ';
+            }
+            else{
+               *(_readBufEnd - c) = cmd[match[0]][strs[0].size() + i];
+            }
+            cout << *(_readBufEnd - c);
+            _readBufEnd += 1;
+            _readBufPtr += 1;
+         }
+         int c = 0;
+         while((_readBufEnd - c) != _readBufPtr){
+            cout << '\b';
+            c++;
+         }
+        _tabPressCount = 0;
+         break;
+      }
+      case 4:{
+         mybeep();
+         break;   
+      }
+      case 5:{
+         CmdExec* e = getCmd(cmd[match[0]]);
+         cout << endl;
+         e->usage(cout);
+         cout << endl;
+
+         _readBufPtr = _readBufEnd = _readBuf;
+        *_readBufPtr = 0;
+         printPrompt();
+         rePrint(_readBufPtr, _readBufEnd, origin, ptrpos);
+         break;
+      }
+      case 61:{
+         for(vector<string>::iterator i = filenames.begin(); i != filenames.end(); ){
+            if(*i == "." | *i == "..")
+               filenames.erase(i);
+            else
+               i++;
+         }
+
+         if(filenames.size() == 0) // no file in folder
+            mybeep();
+         else if(filenames.size() == 1){ // one file in folder
+               _readBufPtr = _readBufEnd;
+               while(true){ // Ptr move to first
+                  *_readBufPtr = '\0';
+                  if(_readBufPtr == _readBuf){
+                     cout << " ";
+                     break;
+                  }
+                  cout << " " << '\b' << '\b';
+                  _readBufPtr -= 1;
+               }
+               _readBufPtr = _readBufEnd = _readBuf;
+               *_readBufPtr = 0;
+               for(int i = 0; i < strs[0].size(); i++){ // print
+                  cout << strs[0][i];
+                  *_readBufPtr = strs[0][i];
+                  _readBufPtr += 1;
+                  _readBufEnd += 1;
+               }
+               cout << " ";
+               *_readBufPtr = ' ';
+               _readBufPtr += 1;
+               _readBufEnd += 1;
+               for(int i = 0, n = filenames[0].size(); i < n; i++){
+                  *_readBufPtr = filenames[0][i];
+                  cout << filenames[0][i];
+                  _readBufPtr += 1;
+                  _readBufEnd += 1;
+               }
+               cout << " ";
+               *_readBufPtr = ' ';
+               _readBufPtr += 1;
+               _readBufEnd += 1;
+         }
+         else{ // more than one file in folder
+            int num = 0; // check same filename length
+            for(int i = 0, n = filenames[0].size(); i < n; i++){
+               for(int j = 1, m = filenames.size(); j < m; j++){
+                  if(filenames[0][i] == filenames[j][i]) num = i;
+                  else break;
+               }
+               if(num != i) break;
+            }
+            if(num == 0){ // don't have common prefix in folder
+               cout << endl;
+               filenames.push_back(".");
+               filenames.push_back("..");
+               for(int i = 0, n = filenames.size(); i < n; i++){
+                  cout << setw(16) << left << filenames[i];
+                  if(i%5 == 4) cout << endl;
+               }
+               cout << endl; cout << endl;
+               
+               _readBufPtr = _readBufEnd = _readBuf;
+               *_readBufPtr = 0;
+               printPrompt();
+               rePrint(_readBufPtr, _readBufEnd, origin, ptrpos);
+            }
+            else{ // have common prefix
+               for(int i = 0; i <= num; i++){
+                  int c = -2;
+                  while((_readBufEnd - c) != _readBufPtr){
+                     c++;
+                     *(_readBufEnd - c) = *(_readBufEnd - c -1);
+                  }
+                  if(i == n){
+                     *(_readBufEnd - c) = '-';
+                  }
+                  else{
+                     *(_readBufEnd - c) = filenames[0][i];
+                  }
+                  cout << *(_readBufEnd - c);
+                  _readBufEnd += 1;
+                  _readBufPtr += 1;
+               }
+               int c = 0;
+               cout << _readBufPtr;
+               while((_readBufEnd - c) != _readBufPtr){
+                  cout << '\b';
+                  c++;
+               }
+               mybeep();
+            }
+         }
+         break;
+      }
+      case 62:{
+         int num = 0; // check same filename length
+         char c, f;
+         vector<char> samefile;
+         for(int i = 0; i < filenames.size(); i++){
+            for(int j = 0; j < strs[1].size(); j++){
+               isupper(strs[1][j])? c = tolower(strs[1][j]) : c = strs[1][j];
+               isupper(cmd[i][j])? f = tolower(cmd[i][j]) : f = cmd[i][j];
+               if(c != f) break;
+               if(j == (strs[1].size() - 1)) samefile.push_back(i);
+            }
+         }
+         if(samefile.size() == 0){
+            mybeep();
+         }else if(samefile.size() == 1){
+              for(int i = 0, n = filenames[samefile[0]].size() - strs[1].size(); i <= n; i++){
+               int c = 0;
+               while((_readBufEnd - c) != _readBufPtr){
+                  *(_readBufEnd - c) = *(_readBufEnd - c -1);
+                  c++;
+                  if((_readBufEnd - c) == _readBufPtr) 
+                     *(_readBufEnd - c) = *(_readBufEnd - c -1);
+               }
+               if(i == n){
+                  *(_readBufEnd - c) = ' ';
+               }
+               else{
+                  *(_readBufEnd - c) = filenames[samefile[0]][strs[1].size() + i];
+               }
+               cout << *(_readBufEnd - c);
+               _readBufEnd += 1;
+               _readBufPtr += 1;
+            }
+            int c = 0;
+            while((_readBufEnd - c) != _readBufPtr){
+               cout << '\b';
+               c++;
+            }
+         }else{
+            for(vector<string>::iterator i = filenames.begin(); i != filenames.end(); ){
+               if(*i == "." | *i == "..")
+                  filenames.erase(i);
+               else
+                  i++;
+            }
+            for(int i = 0; i < filenames.size(); i++){
+               for(int j = 0; j <= num; j++){
+               }
+            }
+         }
+         break;
+      }
+   }
 }
 
 // cmd is a copy of the original input
@@ -371,6 +710,7 @@ CmdParser::getCmd(string cmd)
             if(cmd[i] != iter->second->getOptCmd()[j]) break;
          }
          if(i == n-1){
+            if(cmd.size() < c.size()) return e;
             e = iter->second;
             return e;
          }
