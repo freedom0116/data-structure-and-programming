@@ -162,11 +162,15 @@ class MemRecycleList
    size_t numElm() const {
       // TODO
       if(_first == 0) return 0;
-      int count = 1;
-      T* countElm = _first;
-      size_t* temp = (size_t*)countElm;
-      while((T*)*temp != 0){
-         temp = (size_t*)*temp;
+      size_t count = 1;
+      size_t* cou = (size_t*)_first;
+      size_t* temp = cou;
+      while(true){
+         temp = cou;
+         cout<<"!"<<endl;
+         if((size_t*)*temp != 0) cou = (size_t*)*temp;
+         else break;
+         cout<<"2"<<endl;
          count++;
       }
       return count;
@@ -260,7 +264,9 @@ public:
       cout << "Recycling " << p << " to _recycleList[" << n << "]" << endl;
       #endif // MEM_DEBUG
       // add to recycle list...
-
+      size_t* temp = (size_t*)p;
+      n = (size_t)*temp;
+      cout<<"n = "<<n<<endl;
       getMemRecycleList(n)->pushFront(p);
    }
    void print() const {
@@ -398,6 +404,8 @@ private:
       #ifdef MEM_DEBUG
       cout << "Memory acquired... " << ret << endl;
       #endif // MEM_DEBUG
+      size_t* temp = (size_t*)ret;
+      *temp = (size_t)n;
       return ret;
    }
    // Get the currently allocated number of MemBlock's
