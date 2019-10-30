@@ -167,10 +167,8 @@ class MemRecycleList
       size_t* temp = cou;
       while(true){
          temp = cou;
-         cout<<"!"<<endl;
          if((size_t*)*temp != 0) cou = (size_t*)*temp;
          else break;
-         cout<<"2"<<endl;
          count++;
       }
       return count;
@@ -266,7 +264,7 @@ public:
       // add to recycle list...
       size_t* temp = (size_t*)p;
       n = (size_t)*temp;
-      cout<<"n = "<<n<<endl;
+      *temp = 0;
       getMemRecycleList(n)->pushFront(p);
    }
    void print() const {
