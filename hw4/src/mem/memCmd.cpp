@@ -178,7 +178,7 @@ MTDeleteCmd::exec(const string& option)
       }else{
          if(numObj == 0) return CmdExec::errorOption(CMD_OPT_ILLEGAL, options[1]);
          for(int i = 0; i < numObj; i++){
-            mtest.deleteArr(rnGen(mtest.getObjListSize()));
+            mtest.deleteArr(rnGen(mtest.getArrListSize()));
          }
       }
       
