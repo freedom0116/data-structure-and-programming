@@ -216,14 +216,29 @@ public:
       }
       // clean memblock
       MemBlock<T>* tempBlock = _activeBlock;
-      while(_activeBlock != 0){
-         tempBlock = _activeBlock->_nextBlock;
-         delete _activeBlock;
-         _activeBlock = tempBlock;
+      if(b == 0 || b == _blockSize){
+         while(_activeBlock->_nextBlock != 0){
+            tempBlock = _activeBlock->_nextBlock;
+            delete _activeBlock;
+            _activeBlock = tempBlock;
+         }
+         _activeBlock->_ptr = _activeBlock->_begin; // reset first block
+         while(true){
+            *(_activeBlock->_ptr) = '\0';
+            if(_activeBlock->_ptr == _activeBlock->_end) break;
+            _activeBlock->_ptr += 1;
+         }
+         _activeBlock->_ptr = _activeBlock->_begin;
       }
-      if(b != 0)
+      else{
+         while(_activeBlock != 0){
+            tempBlock = _activeBlock->_nextBlock;
+            delete _activeBlock;
+            _activeBlock = tempBlock;
+         }
          _blockSize = b;
-      _activeBlock = new MemBlock<T>(0, _blockSize);
+         _activeBlock = new MemBlock<T>(0, _blockSize);
+      }
    }
    // Called by new
    T* alloc(size_t t) {
