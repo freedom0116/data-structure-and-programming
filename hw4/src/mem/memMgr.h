@@ -47,12 +47,12 @@ private:                                                                    \
 //
 // To promote 't' to the nearest multiple of SIZE_T; 
 // e.g. Let SIZE_T = 8;  toSizeT(7) = 8, toSizeT(12) = 16
-#define toSizeT(t) ((t%8)!=0? ((t/8)+1)*8 : t)  // TODO
+#define toSizeT(t) ((t%SIZE_T)!=0? ((t/SIZE_T)+1)*SIZE_T : t)  // TODO
 
 //
 // To demote 't' to the nearest multiple of SIZE_T
 // e.g. Let SIZE_T = 8;  downtoSizeT(9) = 8, downtoSizeT(100) = 96
-#define downtoSizeT(t) ((t%8)!=0? (t/8)*8 : t)  // TODO
+#define downtoSizeT(t) ((t%SIZE_T)!=0? (t/SIZE_T)*SIZE_T : t)  // TODO
 
 // R_SIZE is the size of the recycle list
 #define R_SIZE 256
@@ -403,7 +403,7 @@ private:
       else{ // not in recycleList
          if(_activeBlock->getMem(t, ret) == false){ // check input (true gives address, false otherwimtpse)
             size_t remain = _activeBlock->getRemainSize();
-            if(remain > S){
+            if(remain >= S){
                size_t rn = getArraySize(_activeBlock->getRemainSize());
                getMemRecycleList(rn)->pushFront((T*)_activeBlock->_ptr); // put remain into recycleList
             }

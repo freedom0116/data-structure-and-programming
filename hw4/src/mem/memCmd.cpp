@@ -83,22 +83,42 @@ MTNewCmd::exec(const string& option)
    vector<string> options;
    if (!CmdExec::lexOptions(option, options))
       return CMD_EXEC_ERROR;
-   int numObj;
-   if(!myStr2Int(options[0], numObj)) 
-      return CmdExec::errorOption(CMD_OPT_ILLEGAL, options[0]);
-   if(numObj <= 0)
-      return CmdExec::errorOption(CMD_OPT_ILLEGAL, options[0]);
-   // if numObj is int > 0
+   int numObj, arraySize;
    if(options.size() == 1){
+         if(!myStr2Int(options[0], numObj)) 
+            return CmdExec::errorOption(CMD_OPT_ILLEGAL, options[0]);
+         if(numObj <= 0)
+            return CmdExec::errorOption(CMD_OPT_ILLEGAL, options[0]);
+         // if numObj is int > 0
          mtest.newObjs(numObj);
    }else if(options.size() == 3){
-      if(myStrNCmp("-Array", options[1], 1) != 0) 
-         return CmdExec::errorOption(CMD_OPT_EXTRA, options[1]);
-      int arraySize;
-      if(!myStr2Int(options[2], arraySize))
-         return CmdExec::errorOption(CMD_OPT_ILLEGAL, options[2]);
-      if(arraySize <= 0) 
-         return CmdExec::errorOption(CMD_OPT_ILLEGAL, options[2]);
+      if(myStrNCmp("-Array", options[0], 1) == 0 || myStrNCmp("-Array", options[1], 1) == 0){
+         if(myStrNCmp("-Array", options[0], 1) == 0){
+            if(!myStr2Int(options[1], arraySize)){
+               return CmdExec::errorOption(CMD_OPT_ILLEGAL, options[1]);
+            }
+            if(arraySize <= 0){
+               return CmdExec::errorOption(CMD_OPT_ILLEGAL, options[1]);
+            }
+            if(!myStr2Int(options[2], numObj)) 
+               return CmdExec::errorOption(CMD_OPT_ILLEGAL, options[2]);
+            if(numObj <= 0)
+               return CmdExec::errorOption(CMD_OPT_ILLEGAL, options[2]);
+         }
+         else if(myStrNCmp("-Array", options[1], 1) == 0){
+            if(!myStr2Int(options[2], arraySize)){
+               return CmdExec::errorOption(CMD_OPT_ILLEGAL, options[2]);
+            }
+            if(arraySize <= 0){
+               return CmdExec::errorOption(CMD_OPT_ILLEGAL, options[2]);
+            }
+            if(!myStr2Int(options[0], numObj)){
+               return CmdExec::errorOption(CMD_OPT_ILLEGAL, options[0]);}
+            if(numObj <= 0){
+               return CmdExec::errorOption(CMD_OPT_ILLEGAL, options[0]);}
+         }
+      }
+      else return CmdExec::errorOption(CMD_OPT_EXTRA, options[1]);
       try{
          mtest.newArrs(numObj, arraySize);
       }
@@ -137,21 +157,21 @@ MTDeleteCmd::exec(const string& option)
    vector<string> options;
    if (!CmdExec::lexOptions(option, options))
       return CMD_EXEC_ERROR;
-   int opt;
-   if(myStrNCmp("-Index", options[0], 1) == 0) opt = 0;
-   else if(myStrNCmp("-Random", options[0], 1) == 0) opt = 1;
-   else return CmdExec::errorOption(CMD_OPT_ILLEGAL, options[0]);
-   
-   int numObj;
-   if(options.size() >= 2){
+
+   if(options.size() == 2){ // objList
+      int opt, numObj;
+      if(mtest.getObjListSize() == 0){
+         cerr << "Size of array list is 0!!" << endl;
+         return CMD_EXEC_ERROR;
+      }
+      if(myStrNCmp("-Index", options[0], 1) == 0) opt = 0;
+      else if(myStrNCmp("-Random", options[0], 1) == 0) opt = 1;
+      else return CmdExec::errorOption(CMD_OPT_ILLEGAL, options[0]);
       if(!myStr2Int(options[1], numObj)) 
          return CmdExec::errorOption(CMD_OPT_ILLEGAL, options[1]);
       if(numObj < 0)
          return CmdExec::errorOption(CMD_OPT_ILLEGAL, options[1]);
          // if numObj is int > 0
-   }else return CmdExec::errorOption(CMD_OPT_MISSING, "");
-
-   if(options.size() == 2){ // objList
       if(opt == 0){
          if(numObj >= mtest.getObjListSize()){
             cerr << "Size of object list ("<< mtest.getObjListSize() 
@@ -166,21 +186,67 @@ MTDeleteCmd::exec(const string& option)
          }
       }
    }else if(options.size() == 3){ // arrList
-      if(myStrNCmp("-Array", options[2], 1) != 0)
-         return CmdExec::errorOption(CMD_OPT_EXTRA, options[2]);
-      if(opt == 0){
-         if(numObj >= mtest.getArrListSize()){
-            cerr << "Size of array list ("<< mtest.getArrListSize() 
-            <<") is <= "<< numObj << "!!" << endl;
-            return CmdExec::errorOption(CMD_OPT_ILLEGAL, options[1]);
+      int opt, numObj;
+      if(myStrNCmp("-Array", options[0], 1) == 0 || myStrNCmp("-Array", options[2], 1) == 0){
+         if(myStrNCmp("-Array", options[0], 1) == 0){
+            if(mtest.getArrListSize() == 0){
+               cerr << "Size of array list is 0!!" << endl;
+               return CMD_EXEC_ERROR;
+            }
+            if(myStrNCmp("-Index", options[1], 1) == 0) opt = 0;
+            else if(myStrNCmp("-Random", options[1], 1) == 0) opt = 1;
+            else return CmdExec::errorOption(CMD_OPT_ILLEGAL, options[2]);
+            cout<<"here"<<endl;
+            // number
+            if(!myStr2Int(options[2], numObj)) 
+               return CmdExec::errorOption(CMD_OPT_ILLEGAL, options[2]);
+            if(numObj < 0)
+               return CmdExec::errorOption(CMD_OPT_ILLEGAL, options[2]);
+            // if numObj is int > 0
+            if(opt == 0){
+               if(numObj >= mtest.getArrListSize()){
+                  cerr << "Size of array list ("<< mtest.getArrListSize() 
+                  <<") is <= "<< numObj << "!!" << endl;
+                  return CmdExec::errorOption(CMD_OPT_ILLEGAL, options[2]);
+               }
+               mtest.deleteArr(numObj);
+            }else{
+               if(numObj == 0) return CmdExec::errorOption(CMD_OPT_ILLEGAL, options[2]);
+               for(int i = 0; i < numObj; i++){
+                  mtest.deleteArr(rnGen(mtest.getArrListSize()));
+               }
+            }
+         }else if(myStrNCmp("-Array", options[2], 1) == 0){
+            if(mtest.getArrListSize() == 0){
+               cerr << "Size of array list is 0!!" << endl;
+               return CMD_EXEC_ERROR;
+            }
+            if(myStrNCmp("-Index", options[0], 1) == 0) opt = 0;
+            else if(myStrNCmp("-Random", options[0], 1) == 0) opt = 1;
+            else return CmdExec::errorOption(CMD_OPT_ILLEGAL, options[0]);
+
+            // number
+            if(!myStr2Int(options[1], numObj)) 
+               return CmdExec::errorOption(CMD_OPT_ILLEGAL, options[1]);
+            if(numObj < 0)
+               return CmdExec::errorOption(CMD_OPT_ILLEGAL, options[1]);
+            // if numObj is int > 0
+            if(opt == 0){
+               if(numObj >= mtest.getArrListSize()){
+                  cerr << "Size of array list ("<< mtest.getArrListSize() 
+                  <<") is <= "<< numObj << "!!" << endl;
+                  return CmdExec::errorOption(CMD_OPT_ILLEGAL, options[1]);
+               }
+               mtest.deleteArr(numObj);
+            }else{
+               if(numObj == 0) return CmdExec::errorOption(CMD_OPT_ILLEGAL, options[1]);
+               for(int i = 0; i < numObj; i++){
+                  mtest.deleteArr(rnGen(mtest.getArrListSize()));
+               }
+            }
          }
-         mtest.deleteArr(numObj);
-      }else{
-         if(numObj == 0) return CmdExec::errorOption(CMD_OPT_ILLEGAL, options[1]);
-         for(int i = 0; i < numObj; i++){
-            mtest.deleteArr(rnGen(mtest.getArrListSize()));
-         }
-      }
+      }         
+      else return CmdExec::errorOption(CMD_OPT_EXTRA, options[2]);
       
    }else return CmdExec::errorOption(CMD_OPT_EXTRA, options[options.size() - 1]);
    
