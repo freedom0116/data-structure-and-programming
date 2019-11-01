@@ -209,32 +209,41 @@ public:
       #endif // MEM_DEBUG
       // TODO
       // clean recycleList
+      cout<<"clean recycle"<<endl;
       MemRecycleList<T>* _deleteList;
       for(int i = 0; i < R_SIZE; i++){
          _deleteList = &(_recycleList[i]);
          _deleteList->reset();
       }
+      cout<<"clean memblock"<<endl;
       // clean memblock
       MemBlock<T>* tempBlock = _activeBlock;
       if(b == 0 || b == _blockSize){
-         while(_activeBlock->_nextBlock != 0){
-            tempBlock = _activeBlock->_nextBlock;
+         while(_activeBlock->getNextBlock() != 0){
+            tempBlock = _activeBlock->getNextBlock();
             delete _activeBlock;
             _activeBlock = tempBlock;
          }
-         _activeBlock->_ptr = _activeBlock->_begin; // reset first block
+         _activeBlock->reset(); // reset first block
          while(true){
             *(_activeBlock->_ptr) = '\0';
             if(_activeBlock->_ptr == _activeBlock->_end) break;
             _activeBlock->_ptr += 1;
          }
-         _activeBlock->_ptr = _activeBlock->_begin;
+         _activeBlock->reset();
       }
       else{
-         while(_activeBlock != 0){
-            tempBlock = _activeBlock->_nextBlock;
-            delete _activeBlock;
-            _activeBlock = tempBlock;
+         cout<<"another"<<endl;
+         while(true){
+            tempBlock = _activeBlock->getNextBlock();
+            if(_activeBlock != 0){
+               delete _activeBlock;
+            }
+            if(tempBlock != 0) _activeBlock = tempBlock;
+            else{
+               tempBlock = 0;
+               break;
+            }
          }
          _blockSize = b;
          _activeBlock = new MemBlock<T>(0, _blockSize);
@@ -280,6 +289,7 @@ public:
       size_t* temp = (size_t*)p;
       n = (size_t)*temp;
       *temp = 0;
+      temp = 0;
       getMemRecycleList(n)->pushFront(p);
    }
    void print() const {
@@ -328,7 +338,8 @@ private:
       size_t size = t;
       size_t objsize = toSizeT(S);
       if(size == objsize) return 0;
-      return size = size / S;
+      size = size / S;
+      return size;
    }
    // Go through _recycleList[m], its _nextList, and _nexList->_nextList, etc,
    //    to find a recycle list whose "_arrSize" == "n"
@@ -404,12 +415,15 @@ private:
          if(_activeBlock->getMem(t, ret) == false){ // check input (true gives address, false otherwimtpse)
             size_t remain = _activeBlock->getRemainSize();
             if(remain >= S){
-               size_t rn = getArraySize(_activeBlock->getRemainSize());
+               remain = downtoSizeT(remain);
+               size_t rn = getArraySize(remain);
+               if(remain%S == 0) rn -= 1;
                getMemRecycleList(rn)->pushFront((T*)_activeBlock->_ptr); // put remain into recycleList
             }
             MemBlock<T>* _newBlock = new MemBlock<T>(_activeBlock, _blockSize); // create new memblock
             _activeBlock = _newBlock; // set as activeblock
             _activeBlock->getMem(t, ret); // give address from new block
+            _newBlock = 0;
          }
       }
 
@@ -419,17 +433,19 @@ private:
       #endif // MEM_DEBUG
       size_t* temp = (size_t*)ret;
       *temp = (size_t)n;
+      temp = 0;
       return ret;
    }
    // Get the currently allocated number of MemBlock's
    size_t getNumBlocks() const {
       // TODO
       size_t number = 1;
-      MemBlock<T>* _getNum = _activeBlock;
-      while(_getNum->_nextBlock != 0){
+      MemBlock<T>* getNum = _activeBlock;
+      while(getNum->getNextBlock() != 0){
          number++;
-         _getNum = _getNum->_nextBlock;
+         getNum = getNum->getNextBlock();
       }
+      getNum = 0;
       return number;
    }
 
