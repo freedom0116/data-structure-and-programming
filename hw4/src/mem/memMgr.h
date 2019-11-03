@@ -153,6 +153,7 @@ class MemRecycleList
       if(_nextList != 0){
          _nextList->reset();
          delete _nextList;
+         _nextList = NULL;
       }
    }
 
@@ -238,12 +239,10 @@ public:
             tempBlock = _activeBlock->getNextBlock();
             if(_activeBlock != 0){
                delete _activeBlock;
+               _activeBlock = NULL;
             }
             if(tempBlock != 0) _activeBlock = tempBlock;
-            else{
-               tempBlock = 0;
-               break;
-            }
+            else break;
          }
          _blockSize = b;
          _activeBlock = new MemBlock<T>(0, _blockSize);
