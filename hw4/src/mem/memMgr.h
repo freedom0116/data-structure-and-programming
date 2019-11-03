@@ -226,12 +226,6 @@ public:
             _activeBlock = tempBlock;
          }
          _activeBlock->reset(); // reset first block
-         while(true){
-            *(_activeBlock->_ptr) = '\0';
-            if(_activeBlock->_ptr == _activeBlock->_end) break;
-            _activeBlock->_ptr += 1;
-         }
-         _activeBlock->reset();
       }
       else{
          cout<<"another"<<endl;
@@ -288,7 +282,7 @@ public:
       size_t* temp = (size_t*)p;
       n = (size_t)*temp;
       *temp = 0;
-      temp = 0;
+      temp = NULL;
       getMemRecycleList(n)->pushFront(p);
    }
    void print() const {
@@ -422,7 +416,6 @@ private:
             MemBlock<T>* _newBlock = new MemBlock<T>(_activeBlock, _blockSize); // create new memblock
             _activeBlock = _newBlock; // set as activeblock
             _activeBlock->getMem(t, ret); // give address from new block
-            _newBlock = 0;
          }
       }
 
@@ -444,7 +437,6 @@ private:
          number++;
          getNum = getNum->getNextBlock();
       }
-      getNum = 0;
       return number;
    }
 
