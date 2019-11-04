@@ -423,9 +423,9 @@ private:
       #ifdef MEM_DEBUG
       cout << "Memory acquired... " << ret << endl;
       #endif // MEM_DEBUG
-      size_t* temp = (size_t*)ret;
-      *temp = (size_t)n;
-      temp = 0;
+      // size_t* temp = (size_t*)ret;
+      // *temp = (size_t)n;
+      // temp = 0;
       return ret;
    }
    // Get the currently allocated number of MemBlock's

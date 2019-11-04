@@ -162,7 +162,7 @@ MTDeleteCmd::exec(const string& option)
       int opt, numObj;
       if(mtest.getObjListSize() == 0){
          cerr << "Size of array list is 0!!" << endl;
-         return CmdExec::errorOption(CMD_OPT_ILLEGAL, "");
+         return CmdExec::errorOption(CMD_OPT_EXTRA, options[0]);
       }
       if(myStrNCmp("-Index", options[0], 1) == 0) opt = 0;
       else if(myStrNCmp("-Random", options[0], 1) == 0) opt = 1;
@@ -191,7 +191,7 @@ MTDeleteCmd::exec(const string& option)
          if(myStrNCmp("-Array", options[0], 1) == 0){
             if(mtest.getArrListSize() == 0){
                cerr << "Size of array list is 0!!" << endl;
-            return CmdExec::errorOption(CMD_OPT_ILLEGAL, "");
+               return CmdExec::errorOption(CMD_OPT_EXTRA, options[0]);
             }
             if(myStrNCmp("-Index", options[1], 1) == 0) opt = 0;
             else if(myStrNCmp("-Random", options[1], 1) == 0) opt = 1;
