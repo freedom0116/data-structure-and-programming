@@ -210,13 +210,11 @@ public:
       #endif // MEM_DEBUG
       // TODO
       // clean recycleList
-      cout<<"clean recycle"<<endl;
       MemRecycleList<T>* _deleteList;
       for(int i = 0; i < R_SIZE; i++){
          _deleteList = &(_recycleList[i]);
          _deleteList->reset();
       }
-      cout<<"clean memblock"<<endl;
       // clean memblock
       MemBlock<T>* tempBlock = _activeBlock;
       if(b == 0 || b == _blockSize){
@@ -228,7 +226,6 @@ public:
          _activeBlock->reset(); // reset first block
       }
       else{
-         cout<<"another"<<endl;
          while(true){
             tempBlock = _activeBlock->getNextBlock();
             if(_activeBlock != 0){
