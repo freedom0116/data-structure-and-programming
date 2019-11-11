@@ -325,8 +325,8 @@ private:
       assert(t % SIZE_T == 0);
       assert(t >= S);
       // TODO
-      size_t size = t;
-      size_t objsize = toSizeT(S);
+      size_t size = t - 8;
+      size_t objsize = S;
       if(size == objsize) return 0;
       size = size / S;
       return size;
@@ -407,7 +407,7 @@ private:
             if(remain >= S){
                remain = downtoSizeT(remain);
                size_t rn = getArraySize(remain);
-               if(remain%S == 0) rn -= 1;
+               // if(remain%S == 0) rn -= 1;
                getMemRecycleList(rn)->pushFront((T*)_activeBlock->_ptr); // put remain into recycleList
             }
             MemBlock<T>* _newBlock = new MemBlock<T>(_activeBlock, _blockSize); // create new memblock
