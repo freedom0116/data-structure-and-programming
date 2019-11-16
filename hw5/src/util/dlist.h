@@ -64,7 +64,7 @@ public:
          return *this;
       }
       iterator operator ++ (int) {
-         iterator t = *this;
+         iterator t(this->_node);
          this->_node = this->_node->_next;
          return t;
       }
@@ -73,7 +73,7 @@ public:
          return *this;
       }
       iterator operator -- (int) {
-         iterator t = *this;
+         iterator t(this->_node);
          this->_node = this->_node->_prev;
          return t;
       }
@@ -98,19 +98,20 @@ public:
 
    // TODO: implement these functions
    iterator begin() const {
-      iterator n(_head->_next);
+      iterator n(_head);
       return n;
    }
    iterator end() const {
-      iterator n(_head);
+      iterator n(_head->_prev);
       return n;
    }
    bool empty() const { 
       if(_head->_prev == _head && _head->_next == _head) return true;
       return false;
    }
-   size_t size() const {  
+   size_t size() const {
       size_t count = 0;
+      if(empty()) return count;
       DList<T>::iterator n = begin();
       for(; n != end(); ++n){
          count++;
@@ -120,49 +121,97 @@ public:
 
    void push_back(const T& x) {
       _isSorted = false;
-      DListNode<T>* n = new DListNode<T>(x, _head->_prev, _head);
-      _head->_prev->_next = n;
-      _head->_prev = n;
+      if(empty()){
+         DListNode<T>* n = new DListNode<T>(x, _head->_prev, _head->_next);
+         _head->_prev = n;
+         _head->_next = n;
+         _head = n;
+      }else{
+         DListNode<T>* dummy = _head->_prev;
+         DListNode<T>* n = new DListNode<T>(x, dummy->_prev, dummy);
+         dummy->_prev->_next = n;
+         dummy->_prev = n;
+      }
    }
    void pop_front() {
       if(!empty()){
-         DListNode<T>* d = _head->_next;
-         _head->_next = _head->_next->_next;
-         _head->_next->_prev = _head;
-         delete d;
-         d = NULL;
+         DListNode<T>* dummy = _head->_prev;
+         DListNode<T>* d = _head;
+         if(dummy->_prev == _head){
+            _head = dummy;
+            dummy->_prev = dummy;
+            dummy->_next = dummy;
+            delete d;
+            d = NULL;
+         }
+         else{
+            dummy->_next = dummy->_next->_next;
+            dummy->_next->_prev = dummy;
+            _head = dummy->_next;
+            delete d;
+            d = NULL;
+         }
       }
    }
    void pop_back() {
       if(!empty()){
-         DListNode<T>* d = _head->_prev;
-         _head->_prev = _head->_prev->_prev;
-         _head->_prev->_next = _head;
-         delete d;
-         d = NULL;
+         DListNode<T>* dummy = _head->_prev;
+         DListNode<T>* d = dummy->_prev;
+         if(d == _head){
+            _head = dummy;
+            dummy->_prev = dummy;
+            dummy->_next = dummy;
+            delete d;
+            d = NULL;
+         }
+         else{
+            dummy->_prev = dummy->_prev->_prev;
+            dummy->_prev->_next = dummy;
+            delete d;
+            d = NULL;
+         }
       }
    }
 
    // return false if nothing to erase
    bool erase(iterator pos) {
+      if(empty()) return false;
       DList<T>::iterator n = begin();
       for(; n != end(); ++n){
          if(n == pos) {
-            n._node->_prev->_next = n._node->_next;
-            n._node->_next->_prev = n._node->_prev;
-            delete n._node;
+            if(n._node == _head){
+               DListNode<T>* d = _head;
+               _head->_prev->_next = _head->_next;
+               _head->_next->_prev = _head->_prev;
+               _head = _head->_next;
+               delete d;
+               d = NULL;
+            }else{
+               n._node->_prev->_next = n._node->_next;
+               n._node->_next->_prev = n._node->_prev;
+               delete n._node;
+            }
             return true;
          }
       }
       return false; 
    }
    bool erase(const T& x) { 
+      if(empty()) return false;
       DList<T>::iterator n = begin();
       for(; n != end(); ++n){
          if(*n == x) {
-            n._node->_prev->_next = n._node->_next;
-            n._node->_next->_prev = n._node->_prev;
-            delete n._node;
+            if(n._node == _head){
+               DListNode<T>* d = _head;
+               _head->_prev->_next = _head->_next;
+               _head->_next->_prev = _head->_prev;
+               _head = _head->_next;
+               delete d;
+               d = NULL;
+            }else{   n._node->_prev->_next = n._node->_next;
+               n._node->_next->_prev = n._node->_prev;
+               delete n._node;
+               }
             return true;
          }
       }
@@ -179,28 +228,21 @@ public:
 
    void clear() {
       for(size_t i = 0, s = size(); i < s; i++){
-         pop_front();
+         pop_back();
       }
    }  // delete all nodes except for the dummy node
 
    void sort() const {
       if(_isSorted == true) return;
-      DList<T>::iterator n = begin(), check, li = begin();
+      DList<T>::iterator check, li = begin();
       _isSorted = true;
-      while(li != end()){
-         n = li++;
-         for(check = begin(); check != n; ++check){
-            if(*n < *check){
-               // origin n neighbor
-               n._node->_prev->_next = n._node->_next;
-               n._node->_next->_prev = n._node->_prev;
-               // n new pos
-               n._node->_next = check._node;
-               n._node->_prev = check._node->_prev;
-               // n new neighbor
-               check._node->_prev->_next = n._node;
-               check._node->_prev = n._node;
-               break;
+
+      for(; li != end(); ++li){
+         for(check = begin(); check != li; ++check){
+            if(*li < *check){
+               T temp = *check;
+               *check = *li;
+               *li = temp;
             }
          }
       }

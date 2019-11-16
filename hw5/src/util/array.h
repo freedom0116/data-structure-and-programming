@@ -58,11 +58,11 @@ public:
       }
 
       iterator operator + (int i) const {         
-         iterator t = _node + i;
-         return t; 
+         iterator t(_node + i);
+         return t;
       }
       iterator& operator += (int i) { 
-         if(_node != (_node + i)) _node += 1;
+         if(_node != (_node + i)) _node += i;
          return *this; 
       }
 
@@ -138,6 +138,7 @@ public:
    void pop_back() { if(!empty()) _size -= 1; }
 
    bool erase(iterator pos) {
+      if(empty()) return false;
       Array<T>::iterator n = begin();
       for(; n != end(); ++n){
          if(n == pos){
@@ -149,6 +150,7 @@ public:
       return false;
    }
    bool erase(const T& x) {
+      if(empty()) return false;
       Array<T>::iterator n = begin();
       for(; n != end(); ++n){
          if(*n == x){
