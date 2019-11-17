@@ -36,14 +36,14 @@ class BSTreeNode
    BSTreeNode<T>* _left;
 };
 
-template <class T>
+template <class N, class S>
 class List
 {
 public:
    List() {}
    ~List() {}
 
-   void push_back(BSTreeNode<T>* n, string s){
+   void push_back(N n, S s){
       _nodelist.push_back(n);
       _statelist.push_back(s);
    }
@@ -58,12 +58,12 @@ public:
       else return false;
    }
 
-   BSTreeNode<T>* get_node(int n = 0){ return _nodelist[n]; }
-   string get_state(int n = 0){ return _statelist[n]; }
+   N get_node(int n = 0){ return _nodelist[n]; }
+   S get_state(int n = 0){ return _statelist[n]; }
 
 private:
-   vector<BSTreeNode<T>*> _nodelist; 
-   vector<string> _statelist; // only 2 state: left, top
+   vector<N> _nodelist; 
+   vector<S> _statelist; // only 2 state: left, top
 };
 
 template <class T>
@@ -164,7 +164,7 @@ public:
 
    private:
       BSTreeNode<T>* _node; // store init node
-      List<T> list; // only 2 state: left, top
+      List<BSTreeNode<T>*, string> list; // only 2 state: left, top
    };
 
    iterator begin() const {
@@ -255,44 +255,50 @@ public:
 
    // return false if nothing to erase
    bool erase(iterator pos) {
-      _size -= 1;
-      return false; 
+      if(pos._node == 0) return false;
+      if(size() == 1){
+         delete _root;
+         _root = NULL;
+      }else
+         repair(pos._node);
+      return true;
    }
    bool erase(const T& x) {
+      iterator n;
+      n = find(x);
+      if(n._node == 0) return false;
+      if(size() == 1){
+         delete _root;
+         _root = NULL;
+      }else
+         repair(n._node);
+      return true;
+   }
+
+   iterator find(const T& x) {
       int direction;
       BSTreeNode<T>* i = _root;
-      if(empty()) return false;
+      if(empty()) return iterator();
       while(true){
          direction = compare(i->_data, x);
          if(direction == -1){
             if(i->_left != 0) i = i->_left;
-            else return false; 
+            else return iterator(); 
          }
          else if(direction == 0){
-            if(size() == 1){
-               delete _root;
-               _root = NULL;
-            }
-            else{
-               repair(i);
-               i = NULL;
-               _size -= 1;
-            }
-            return true;
-         }
+            iterator n(i);
+            i = NULL;
+            return n;
+         } // find
          else if(direction == 1){
             if(i->_right != 0) i = i->_right;
-            else return false;
+            else return iterator();
          }
          else{
             cerr << "Error: function compare() isn't correct" << endl;
-            return false;
+            throw exception();
          }
       }
-   }
-
-   iterator find(const T& x) {
-      return 0;
    }
 
    void clear() {
