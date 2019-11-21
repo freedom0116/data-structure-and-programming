@@ -232,6 +232,7 @@ public:
       }
    }  // delete all nodes except for the dummy node
 
+   //Insertion Sort O(n^2)
    void sort() const {
       if(_isSorted == true) return;
       DList<T>::iterator check, li = begin();

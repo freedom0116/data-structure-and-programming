@@ -19,7 +19,7 @@ adtp
 adtd -back 5
 adtp
 adtd -r 5
-adtp
+adtp -v
 adtd -all
 adtp
 q -f

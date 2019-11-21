@@ -29,42 +29,12 @@ class BSTreeNode
 
    BSTreeNode(const T& d, BSTreeNode<T>* t = 0, BSTreeNode<T>* r = 0,
    BSTreeNode<T>* l = 0): _data(d), _top(t), _right(r), _left(l) {}
+   ~BSTreeNode<T>() {}
 
    T _data;
    BSTreeNode<T>* _top;
    BSTreeNode<T>* _right;
    BSTreeNode<T>* _left;
-};
-
-template <class N, class S>
-class List
-{
-public:
-   List() {}
-   ~List() {}
-
-   void push_back(N n, S s){
-      _nodelist.push_back(n);
-      _statelist.push_back(s);
-   }
-   void pop_back(){
-      _nodelist.pop_back();
-      _statelist.pop_back();      
-   }
-
-   int size(){ return _nodelist.size(); }
-
-   bool empty(){
-      if(this->size() == 0) return true;
-      else return false;
-   }
-
-   N get_node(int n = 0){ return _nodelist[n]; }
-   S get_state(int n = 0){ return _statelist[n]; }
-
-private:
-   vector<N> _nodelist; 
-   vector<S> _statelist; // only 2 state: left, top
 };
 
 template <class T>
@@ -96,7 +66,7 @@ public:
             else{
                if(_node->_right == 0){
                   _node = _node->_top;
-               }else{
+               }else {
                   list.push_back(_node->_top);
                   _node = localmin(_node->_right);
                }
@@ -118,25 +88,117 @@ public:
          return *this;
       } // move to next
       iterator operator ++ (int) {
-         iterator t(this->_node), n(this->_node);
-         ++n;
-         this->_node = n._node;
+         iterator t(this->_node);
+         if(list.empty()){
+            if(_node->_top == _node){
+               _node = _node->_right;
+            } // _root
+            else{
+               if(_node->_right == 0){
+                  _node = _node->_top;
+               }else {
+                  list.push_back(_node->_top);
+                  _node = localmin(_node->_right);
+               }
+            }
+         }else{
+            _node = list[list.size() - 1]; // return this one
+            list.pop_back();
+         }
+         
+         if(_node->_top != _node){
+            BSTreeNode<T>* t = _node->_top;
+            if(t->_right != _node) list.push_back(_node->_top);
+         }
+         if(_node->_right != 0){
+            BSTreeNode<T>* i;
+            i = localmin(_node->_right);
+            list.push_back(i);
+         }if(list.empty()){
+            if(_node->_top == _node){
+               _node = _node->_right;
+            } // _root
+            else{
+               if(_node->_right == 0){
+                  _node = _node->_top;
+               }else {
+                  list.push_back(_node->_top);
+                  _node = localmin(_node->_right);
+               }
+            }
+         }else{
+            _node = list[list.size() - 1]; // return this one
+            list.pop_back();
+         }
+         
+         if(_node->_top != _node){
+            BSTreeNode<T>* t = _node->_top;
+            if(t->_right != _node) list.push_back(_node->_top);
+         }
+         if(_node->_right != 0){
+            BSTreeNode<T>* i;
+            i = localmin(_node->_right);
+            list.push_back(i);
+         }
          return t;
       }
       iterator& operator -- () {
-         while(_node->_top != 0){
-            _node = _node->_top;
+         if(list.empty()){
+            if(_node->_top == _node){
+               if(_node->_left != 0) _node = _node->_left;
+            } // _root
+            else{
+               if(_node->_left == 0){
+                  _node = _node->_top;
+               }else {
+                  list.push_back(_node->_top);
+                  _node = localmax(_node->_left);
+               }
+            }
+         }else{
+            _node = list[list.size() - 1]; // return this one
+            list.pop_back();
          }
-         while(_node->_right != 0){
-            _node = _node->_right;
+
+         if(_node->_top != _node){
+            BSTreeNode<T>* t = _node->_top;
+            if(t->_left != _node) list.push_back(_node->_top);
          }
-         _node = _node->_top;
+         if(_node->_left != 0){
+            BSTreeNode<T>* i;
+            i = localmax(_node->_left);
+            list.push_back(i);
+         }
          return *this;
       } // move to end (rightmost)
       iterator operator -- (int) {
-         iterator t(this->_node), n(this->_node);
-         --n;
-         this->_node = n._node;
+         iterator t(this->_node);
+         if(list.empty()){
+            if(_node->_top == _node){
+               if(_node->_left != 0) _node = _node->_left;
+            } // _root
+            else{
+               if(_node->_left == 0){
+                  _node = _node->_top;
+               }else {
+                  list.push_back(_node->_top);
+                  _node = localmax(_node->_left);
+               }
+            }
+         }else{
+            _node = list[list.size() - 1]; // return this one
+            list.pop_back();
+         }
+
+         if(_node->_top != _node){
+            BSTreeNode<T>* t = _node->_top;
+            if(t->_left != _node) list.push_back(_node->_top);
+         }
+         if(_node->_left != 0){
+            BSTreeNode<T>* i;
+            i = localmax(_node->_left);
+            list.push_back(i);
+         }
          return t;
       }
 
@@ -159,9 +221,12 @@ public:
       vector<BSTreeNode<T>*> list; // state: node come from      
 
       BSTreeNode<T>* localmin(BSTreeNode<T>* n){
-         while(n->_left != 0)
-            n = n->_left;
-         return n;
+         if(n->_left == 0) return n;
+         else return localmin(n->_left);
+      }
+      BSTreeNode<T>* localmax(BSTreeNode<T>* n){
+         if(n->_right == 0) return n;
+         else return localmax(n->_right);
       }
    };
 
@@ -176,7 +241,7 @@ public:
       return e;
    }
    bool empty() const {
-      if(_root == 0) return true;
+      if(size() == 0) return true;
       return false;
    }
    size_t size() const { return _size; }
@@ -187,25 +252,16 @@ public:
          _root = newnode;
          newnode->_top = _root;
       }else{
-         int direction;
          BSTreeNode<T>* i = _root;
-         while(true){
-            direction = compare(i->_data, x);
-            if(direction == -1){
-               if(i->_left == 0) {
-                  i->_left = newnode;
-                  newnode->_top = i;
-                  break;
-               }else i = i->_left;
-            }
-            else{
-               if(i->_right == 0 || i->_right == _BSend){
-                  i->_right = newnode;
-                  newnode->_top = i;
-                  break;
-               }else i = i->_right;
-            }
+         BSTreeNode<T>* parent;
+         while(i != 0 && i != _BSend){
+            parent = i;
+            if(newnode->_data < i->_data) i = i->_left;
+            else i = i->_right;
          }
+         newnode->_top = parent;
+         if(newnode->_data < parent->_data) parent->_left = newnode;
+         else parent->_right = newnode;
       }
       setend();
       _size += 1;
@@ -214,77 +270,52 @@ public:
       if(empty()) return;
       if(size() == 1){
          delete _root;
-         _root = NULL;
       }else{
          BSTreeNode<T>* d = head();
-         BSTreeNode<T>* head = d;
-         if(d == _root){
-            _root = _root->_right;
-            _root->_top = _root;
-         }else{
-            if(head->_right == 0){
-               head = head->_top;
-               head->_left = 0;
-            }else{
-               head = head->_right;
-               d->_top->_left = head;
-               head->_top = d->_top;
-            }
-         }
+         repair(d);
          delete d;
       }
-      setend();
       _size -= 1;
+      setend();
    }
    void pop_back() {
       if(empty()) return;
       if(size() == 1){
          delete _root;
-         _root = NULL;         
       }else{
          BSTreeNode<T>* d = _BSend->_top;
-         BSTreeNode<T>* tail = d;
-         if(tail == _root) {
-            _root = _root->_left;
-            _root->_top = _root;
-         }else{
-            if(tail->_left == 0){
-               tail = tail->_top;
-               tail->_right = 0;
-            }else{
-               tail = tail->_left;
-               d->_top->_right = tail;
-               tail->_top = d->_top;
-            }
-         }
-         delete d;  
+         repair(d);
+         delete d;
       }
-      setend();
       _size -= 1;
+      setend();
    }
 
    // return false if nothing to erase
    bool erase(iterator pos) {
-      if(pos._node == 0) return false;
-      _size -= 1;
+      iterator d = find(*pos);
+      if(d._node == 0) return false;
       if(size() == 1){
          delete _root;
-         _root = NULL;
-      }else
-         repair(pos._node);
+      }else{
+         repair(d._node);
+         delete d._node;
+      }
+      _size -= 1;
       setend();
       return true;
    }
    bool erase(const T& x) {
-      iterator n;
-      n = find(x);
-      if(n._node == 0) return false;
-      _size -= 1;
+      iterator d = find(x);
+      d = find(x);
+      if(d._node == 0) return false;
       if(size() == 1){
-         delete _root;
-         _root = NULL;
-      }else
-         repair(n._node);
+         delete _root;      
+      }else{
+         repair(d._node);
+         delete d._node;
+      }
+      _size -= 1;
       setend();
       return true;
    }
@@ -296,50 +327,25 @@ public:
          if(*i == x) return i;
       }
       return iterator();
-      // int direction;
-      // BSTreeNode<T>* i = _root;
-      // while(true){
-      //    direction = compare(i->_data, x);
-      //    if(direction == -1){
-      //       if(i->_left != 0) i = i->_left;
-      //       else return iterator(); 
-      //    }
-      //    else if(direction == 0){
-      //       iterator n(i);
-      //       i = NULL;
-      //       return n;
-      //    } // find
-      //    else if(direction == 1){
-      //       if(i->_right != 0) i = i->_right;
-      //       else return iterator();
-      //    }
-      //    else{
-      //       cerr << "Error: function compare() isn't correct" << endl;
-      //       throw exception();
-      //    }
-      // }
    }
 
    void clear() {
       if(!empty()){
          BSTree<T>::iterator i = begin();
-         for(; i != end(); i++){
-            delete i._node;
+         for(; i != end(); ++i){
+            erase(i);
          }
+         _size = 0;
+         setend();
       }
    } // remember to do _head = NULL
 
    void print() const {
-      // BSTree<T>::iterator i = begin();
-      // int idx = 0;
-      // if(!empty()){
-      //    for(; i != end(); i++){
-      //       cout << "[" << setw(3) << right << idx << "] = "
-      //       << setw(3) << right << *i << "   ";
-      //       if(idx % 4 == 3) cout << endl;
-      //    }
-      //    if(idx % 4 == 3) cout << endl;
-      // }
+      BSTreeNode<T>* n = head();
+      cout<<"head:"<<n->_data<<endl;
+      cout<<"root:"<<_root->_data<<endl;
+      cout<<"tail:"<<_BSend->_top->_data<<endl;
+      cout<<"size:"<<size()<<endl;
    }
 
    void sort() const {} // useless
@@ -350,57 +356,105 @@ private:
    size_t _size;
 
    BSTreeNode<T>* head() const {
-      if(empty()) return NULL;
       BSTreeNode<T>* h = _root;
       while(h->_left != 0){
          h = h->_left;
       }
       return h;
-   }   
-
-   int compare(T ref,T n){
-      if(ref > n) return -1; // go left
-      else if(ref == n) return 0; // same
-      return 1; // go right
    }
 
-   BSTreeNode<T>* findmin(BSTreeNode<T>* n){
-      while(n->_left != 0){
-         n = n->_left;
+   bool repairRoot(BSTreeNode<T>* n){
+      if(n != _root) return false;
+      // cout<<"root"<<endl;
+
+      int children = 0;
+      if(n->_left != 0) children += 1;
+      if(n->_right != 0 && n->_right != _BSend) children += 2;
+      // cout<<"ch:"<<children<<endl;
+
+      if(children == 1){
+         _root = _root->_left;
+         _root->_top = _root;
       }
-      return n;
+      else if(children == 2){
+         _root = _root->_right;
+         _root->_top = _root;
+      }
+      else if(children == 3){
+         BSTreeNode<T>* i = successor(n);
+         if(n->_right == i){
+            // cout<<"2"<<endl;
+            _root = i;
+            _root->_top = _root;
+            _root->_left = n->_left;
+            _root->_left->_top = _root;
+         }else{
+            // cout<<"3"<<endl;
+            repair(i);
+            _root = i;
+            _root->_top = _root;
+            _root->_left = n->_left;
+            if(_root->_left != 0) _root->_left->_top = _root;
+            _root->_right = n->_right;
+            if(_root->_right != 0 && _root->_right != _BSend) _root->_right->_top = _root;
+         }
+      }
+      return true;
    }
    void repair(BSTreeNode<T>* n){
-      BSTreeNode<T>* alter;
-      BSTreeNode<T>* mintop;
-      alter = n->_right;
-      alter = findmin(alter);
+      if(!repairRoot(n)){
+         int children = 0;
+         if(n->_left != 0) children += 1;
+         if(n->_right != 0 && n->_right != _BSend) children += 2;
+         // cout<<"ch:"<<children<<endl;
 
-      mintop = alter->_top;
-      mintop->_left = 0;
+         if(children == 0) crossLink(n->_top, n, 0);
+         else if(children == 1) crossLink(n->_top, n, n->_left);
+         else if(children == 2) crossLink(n->_top, n, n->_right);
+         else{
+            BSTreeNode<T>* i = successor(n);
 
-      if(n == _root){
-         _root = alter;
-         _root->_top = _root;
-      }else
-         alter->_top = n->_top;
-      alter->_left = n->_left;
-      alter->_right = n->_right;
-      delete n;
+            if(n->_right == i){
+               // cout<<"="<<endl;
+               crossLink(n->_top, n, i);
+               i->_left = n->_left;
+               if(i->_left != 0) i->_left->_top = i;
+            }else{
+               // cout<<"!="<<endl;
+               repair(i);
+               crossLink(n->_top, n, i);
+               i->_left = n->_left;
+               if(i->_left != 0) i->_left->_top = i;
+               i->_right = n->_right;
+               if(i->_right != 0 && i->_right != _BSend) i->_right->_top = i;
+            }
+         }
+      }
+   }
+   BSTreeNode<T>* successor(BSTreeNode<T>* n){ return findmin(n->_right); }
+   BSTreeNode<T>* findmin(BSTreeNode<T>* n){
+      if(n->_left == 0) return n;
+      else return findmin(n->_left);
+   }
+   void crossLink(BSTreeNode<T>* top, BSTreeNode<T>* check, BSTreeNode<T>* child){
+      if(child != 0){
+         if(top->_left == check) top->_left = child;
+         else if(top->_right == check) top->_right = child;
+         child->_top = top;
+      }else{
+         if(top->_left == check) top->_left = 0;
+         else if(top->_right == check) top->_right = 0;
+      }
    }
 
    void setend(){
-      if(empty()){
-         _BSend->_top = NULL;
-      }
+      if(empty()) _BSend->_top = NULL;
       BSTreeNode<T>* i = _root;
-      while(i->_right != 0){
+      while(i->_right != 0 && i->_right != _BSend){
          i = i->_right;
       }
-      if(i != _BSend){
-         _BSend->_top = i;
-         i->_right = _BSend;
-      }
+      _BSend->_top = i;
+      i->_right = _BSend;
    }
 };
 
