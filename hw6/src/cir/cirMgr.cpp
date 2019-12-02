@@ -165,8 +165,8 @@ CirMgr::readCircuit(const string& fileName)
    }
    if(!readHeader(inputfile, state)) return false;
    _totalList.resize(state[0]+state[3]+1);
-   CirGate* flowinput = new CirPiGate(0, 0);
-   _totalList[0] = flowinput;
+   CirGate* const0 = new Const0();
+   _totalList[0] = const0;
 
    for(int i = 0; i < state[1]; i++){
       if(!readInput(inputfile, state[0])) return false;
@@ -183,6 +183,7 @@ CirMgr::readCircuit(const string& fileName)
    insertSort(_piList);
    insertSort(_poList);
    insertSort(_aigList);
+   sortFanout();
 
    bool stopRun = false;
    while(!stopRun){
@@ -192,9 +193,6 @@ CirMgr::readCircuit(const string& fileName)
 
    // for(int i = 0; i < _totalList.size(); i++){
    //    if(_totalList[i] != 0){
-   //       cout<<i<<":"<<_totalList[i]->getSymbols();
-   //       string classType = typeid(*_totalList[i]).name();
-   //       cout<<typeid(*_totalList[i]).name()<<endl;
    //       cout<<i<<" " <<"in:";
    //       for(int j = 0; j <_totalList[i]->getFanin().size();j++){
    //          cout<<" ";
@@ -218,7 +216,7 @@ CirMgr::readHeader(fstream& file, vector<int>& state)
 {
    string header;
    vector<string> sections;
-   getline(file, header); cout<<header<<endl;
+   getline(file, header);
    if(!cutPiece(header, sections)) return false;
 
    int num;
@@ -254,7 +252,7 @@ CirMgr::readInput(fstream& file, int& M)
       if(num > M*2) { errInt = num; return parseError(NUM_TOO_BIG); }
    }else{ errMsg = sections[0]; return parseError(MISSING_NUM); }
 
-   CirGate* PI = new CirPiGate(num, lineNo++);
+   CirGate* PI = new CirPiGate(num, ++lineNo);
    _piList.push_back(PI);
    _totalList[num/2] = PI;
    return true;
@@ -281,10 +279,10 @@ CirMgr::readOutput(fstream& file, int& M, vector<vector<int>>& fanin)
 
    if(_poList.empty()){
       ID = (M + 1) * 2;
-      PO = new CirPoGate(ID, lineNo++);
+      PO = new CirPoGate(ID, ++lineNo);
    }else{
       ID = (_poList[_poList.size() - 1]->getGateID() + 1) * 2;
-      PO = new CirPoGate(ID, lineNo++);
+      PO = new CirPoGate(ID, ++lineNo);
    }
    _poList.push_back(PO);
    _totalList[ID/2] = PO;
@@ -311,7 +309,7 @@ CirMgr::readAig(fstream& file, int& M, vector<vector<int>>& fanin)
       if(num < 0) { errInt = num; return parseError(NUM_TOO_SMALL); }
       if(num > M*2) { errInt = num; return parseError(NUM_TOO_BIG); }
    }else{ errMsg = sections[0]; return parseError(MISSING_NUM); }
-   CirGate* AIG = new AndGate(num, lineNo++);
+   CirGate* AIG = new AndGate(num, ++lineNo);
    _aigList.push_back(AIG);
    _totalList[num/2] = AIG;
    gate.push_back(num/2);
@@ -330,6 +328,7 @@ CirMgr::readAig(fstream& file, int& M, vector<vector<int>>& fanin)
 bool
 CirMgr::readSymbol(fstream& file, bool& stopRun)
 {
+   lineNo++;
    string I;
    vector<string> sections;
    getline(file, I);
@@ -343,14 +342,10 @@ CirMgr::readSymbol(fstream& file, bool& stopRun)
       cerr << "have less or more than one element" << endl;
       return false;
    }
-   if(sections[0].size() != 2){
-      cerr << "wrong symbols" << endl;
-      return false;
-   }
 
    char setIO = sections[0][0];
-   char* id = &sections[0][1];
-   int pinID = atoi(id);
+   string id = sections[0].substr(1, sections[0].size()-1);
+   int pinID; myStr2Int(id, pinID);
    if(setIO == 'i'){
       if(_piList[pinID] == 0) {
          cerr << "number wrong" << endl; return false;
@@ -403,7 +398,7 @@ CirMgr::setFanIO(vector<vector<int>>& fanin)
          inID = fanin[i][j] / 2;
          (fanin[i][j]%2 == 1)? phase = true : phase = false;
          if(_totalList[inID] == 0){
-            CirGate* Undef = new UnDef(inID);
+            CirGate* Undef = new UnDef(fanin[i][j]);
             _totalList[inID] = Undef;
          }
          _totalList[ID]->setFanin(_totalList[inID], phase); // set fanin
@@ -427,13 +422,21 @@ CirMgr::insertSort(vector<CirGate*>& list)
    CirGate* temp;
    vector<CirGate*>::iterator iter = list.begin(), comp;
    for(; iter != list.end(); iter++){
-      for(comp = list.begin(); comp != list.end(); comp++){
+      for(comp = list.begin(); comp != iter; comp++){
          if((*iter)->getGateID() < (*comp)->getGateID()){
             temp = *comp;
             *comp = *iter;
             *iter = temp;
          }
       }
+   }
+}
+
+void
+CirMgr::sortFanout()
+{
+   for(int t = 0, tSize = _totalList.size(); t < tSize; t++){
+      if(_totalList[t] != 0) _totalList[t]->sortFanout();
    }
 }
 
@@ -470,7 +473,7 @@ CirMgr::printNetlist() const
    cout << endl;
    for(int i = 0, s = _dfsList.size(); i < s; i++){
       cout << "[" << i << "] ";
-      if(_dfsList[i]->getGateID() == 0) cout << "const0" << endl;
+      if(typeid(*_dfsList[i]) == typeid(Const0)) cout << "CONST0" << endl;
       else if(typeid(*_dfsList[i]) == typeid(CirPiGate)){
          cout << left << setw(3) << "PI" << " " << _dfsList[i]->getGateID();
          if(_dfsList[i]->getSymbols() != ""){
@@ -526,12 +529,12 @@ CirMgr::printFloatGates() const
       fanin = _aigList[i]->getFanin();
       for(int j = 0, inSize = fanin.size(); j < inSize; j++){
          if(typeid(*(fanin[j].getPin())) == typeid(UnDef)){
-            floatInGate.push_back(i);
+            floatInGate.push_back(_aigList[i]->getGateID());
             break;
          }
       }
       if(_aigList[i]->getFanout().size() == 0)
-         NoOutGate.push_back(i);
+         NoOutGate.push_back(_aigList[i]->getGateID());
    }
    if(floatInGate.size() > 0){
       cout << "Gates with floating fanin(s):";
@@ -540,7 +543,7 @@ CirMgr::printFloatGates() const
       } cout << endl;
    }
    if(NoOutGate.size() > 0){
-      cout << "Gates defined but not used :";
+      cout << "Gates defined but not used  :";
       for(int i = 0, s = NoOutGate.size(); i < s; i++){
          cout << " " << NoOutGate[i];
       } cout << endl;

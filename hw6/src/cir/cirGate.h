@@ -18,7 +18,6 @@ using namespace std;
 
 class CirGate;
 class Pin;
-class GateState;
 
 //------------------------------------------------------------------------
 //   Define classes
@@ -27,7 +26,7 @@ class GateState;
 class Pin
 {
 public:
-  Pin(CirGate* ID, bool phase = false): _pin(ID), _invPhase(phase) {}
+  Pin(CirGate* ID = 0, bool phase = false): _pin(ID), _invPhase(phase) {}
   ~Pin() {}
   CirGate* getPin() const { return _pin; }
   bool getInvPhase() const { return _invPhase; }
@@ -45,9 +44,10 @@ public:
   virtual ~CirGate() {}
 
   static void setGlobalRef() { _globalRef++; }
-  void setToGlobalRef() { _ref = _globalRef; }
-  bool isGlobalRef() { return (_ref == _globalRef); }
+  void setToGlobalRef() const { _ref = _globalRef; }
+  bool isGlobalRef() const { return (_ref == _globalRef); }
   void dfsTraversal(vector<CirGate*>&);
+  void sortFanout();
 
   // Basic access methods
   string getTypeStr() const { return ""; }
@@ -64,9 +64,12 @@ public:
 
   // Printing functions
   virtual void printGate() const = 0;
+  virtual void printPin() const = 0;
   void reportGate() const;
   void reportFanin(int level) const;
   void reportFanout(int level) const;
+  void faninTraversal(const int& level, int dist) const;
+  void fanoutTraversal(const int& level, int dist) const;
 
 private:
 protected:
@@ -78,35 +81,47 @@ protected:
   vector<Pin> _faninList;
   vector<Pin> _fanoutList;
   static size_t _globalRef;
-  size_t _ref;
+  mutable size_t _ref;
 };
 
 class CirPiGate: public CirGate
 {
 public:
   CirPiGate(int ID = 0, int NO = 0): CirGate(ID, NO) {}
-  void printGate() const { cout<<"h"<<endl; }
+  void printGate() const;
+  void printPin() const;
 };
 
 class CirPoGate: public CirGate
 {
 public:
   CirPoGate(int ID = 0, int NO = 0): CirGate(ID, NO) {}
-  void printGate() const { cout<<"h"<<endl; }
+  void printGate() const;
+  void printPin() const;
 };
 
 class AndGate: public CirGate
 {
 public:
   AndGate(int ID = 0, int NO = 0): CirGate(ID, NO) {}
-  void printGate() const { cout<<"h"<<endl; }
+  void printGate() const;
+  void printPin() const;
 };
 
 class UnDef: public CirGate
 {
 public:
-  UnDef(int ID = 0): CirGate(ID, -1) {}
-  void printGate() const { cout<<"h"<<endl; }
+  UnDef(int ID = 0): CirGate(ID, 0) {}
+  void printGate() const;
+  void printPin() const;
+};
+
+class Const0: public CirGate
+{
+public:
+  Const0(): CirGate(0, 0) {}
+  void printGate() const;
+  void printPin() const;
 };
 
 
