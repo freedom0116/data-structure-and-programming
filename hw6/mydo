@@ -1,0 +1,6 @@
+cirr tests.fraig/sim01.aag
+cirp -s
+cirp -n
+cirp -pi
+cirp -po
+cirp -fl
