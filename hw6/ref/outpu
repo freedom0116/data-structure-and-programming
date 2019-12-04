@@ -1,0 +1,5 @@
+cir> cirr ../tests.err/err30.aag
+[ERROR] Line 6: Literal "4" is redefined, previously defined as PI in line 3!!
+
+cir> 
+cir> 

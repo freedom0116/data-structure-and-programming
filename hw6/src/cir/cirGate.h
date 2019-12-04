@@ -46,11 +46,11 @@ public:
   static void setGlobalRef() { _globalRef++; }
   void setToGlobalRef() const { _ref = _globalRef; }
   bool isGlobalRef() const { return (_ref == _globalRef); }
-  void dfsTraversal(vector<CirGate*>&);
+  void dfsTraversal(GateList&);
   void sortFanout();
 
   // Basic access methods
-  string getTypeStr() const { return ""; }
+  virtual string getTypeStr() const = 0;
   int getGateID() const { return _gateID; }
   unsigned getLineNo() const { return _lineNO; }
   bool getInvPhase() const { return _invPhase; }
@@ -88,6 +88,7 @@ class CirPiGate: public CirGate
 {
 public:
   CirPiGate(int ID = 0, int NO = 0): CirGate(ID, NO) {}
+  string getTypeStr() const{ return "PI"; }
   void printGate() const;
   void printPin() const;
 };
@@ -96,6 +97,7 @@ class CirPoGate: public CirGate
 {
 public:
   CirPoGate(int ID = 0, int NO = 0): CirGate(ID, NO) {}
+  string getTypeStr() const{ return "PO"; }
   void printGate() const;
   void printPin() const;
 };
@@ -104,6 +106,7 @@ class AndGate: public CirGate
 {
 public:
   AndGate(int ID = 0, int NO = 0): CirGate(ID, NO) {}
+  string getTypeStr() const{ return "AIG"; }
   void printGate() const;
   void printPin() const;
 };
@@ -112,6 +115,7 @@ class UnDef: public CirGate
 {
 public:
   UnDef(int ID = 0): CirGate(ID, 0) {}
+  string getTypeStr() const{ return "UNDEF"; }
   void printGate() const;
   void printPin() const;
 };
@@ -120,6 +124,7 @@ class Const0: public CirGate
 {
 public:
   Const0(): CirGate(0, 0) {}
+  string getTypeStr() const{ return "CONST0"; }
   void printGate() const;
   void printPin() const;
 };

@@ -47,11 +47,12 @@ public:
   void writeAag(ostream&) const;
 
 private:
-  vector<CirGate*> _piList;
-  vector<CirGate*> _poList;
-  vector<CirGate*> _aigList;
-  vector<CirGate*> _totalList;
-  vector<CirGate*> _dfsList;
+  GateList _piList;
+  GateList _poList;
+  GateList _aigList;
+  GateList _totalList;
+  GateList _dfsList;
+  vector<string> _commentList;
   
   // funtions use in readCircuit
   bool readHeader(fstream&, vector<int>&);
@@ -59,11 +60,12 @@ private:
   bool readOutput(fstream&, int&, vector<vector<int>>&);
   bool readAig(fstream&, int&, vector<vector<int>>&);
   bool readSymbol(fstream&, bool&);
-  bool cutPiece(string&, vector<string>&);
+  bool readComment(fstream&);
+  bool cutPiece(string&, vector<string>&, int, bool&);
   void setFanIO(vector<vector<int>>&);
 
-  void dfsTraversal(const vector<CirGate*>&);
-  void insertSort(vector<CirGate*>&);
+  void dfsTraversal(const GateList&);
+  void insertSort(GateList&);
   void sortFanout();
 };
 

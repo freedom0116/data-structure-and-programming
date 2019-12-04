@@ -286,4 +286,3 @@ CirWriteCmd::help() const
    cout << setw(15) << left << "CIRWrite: "
         << "write the netlist to an ASCII AIG file (.aag)\n";
 }
-

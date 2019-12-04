@@ -1,0 +1,5 @@
+cir> cirr ../tests.err/err43.aag
+[ERROR] Line 9, Col 2: Illegal white space char(9) is detected!!
+
+cir> 
+cir> 

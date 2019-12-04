@@ -31,7 +31,7 @@ void printSpace(int);
 /*   class CirGate member functions   */
 /**************************************/
 void
-CirGate::dfsTraversal(vector<CirGate*>& dfsList)
+CirGate::dfsTraversal(GateList& dfsList)
 {  
    CirGate* next; 
    for(int i = 0, s = _faninList.size(); i < s; i++){
@@ -75,7 +75,7 @@ CirGate::faninTraversal(const int& level, int dist) const
                next->faninTraversal(level, dist);
             }
          }
-      }else{ (typeid(*this) != typeid(CirPiGate))? cout << " (*)" << endl : cout << endl; }
+      }else{ (this->getFanin().size() != 0)? cout << " (*)" << endl : cout << endl; }
    }else { cout << endl; }
 }
 
@@ -99,7 +99,7 @@ CirGate::fanoutTraversal(const int& level, int dist) const
       if(!this->isGlobalRef()){
          this->setToGlobalRef();
          cout << endl;
-         if(this->getFanout().size() != 0){   
+         if(this->getFanout().size() != 0){
             for(int i = 0, s = _fanoutList.size(); i < s; i++){
                prev = _fanoutList[i].getPin();
                printSpace(level - dist);
@@ -107,7 +107,7 @@ CirGate::fanoutTraversal(const int& level, int dist) const
                prev->fanoutTraversal(level, dist);
             }
          }
-      }else{ (typeid(*this) != typeid(CirPoGate) && dist >= 0)? cout << " (*)" << endl : cout << endl; }
+      }else{ (this->getFanout().size() != 0)? cout << " (*)" << endl : cout << endl; }
    }else{ cout << endl; }
 }
 
@@ -118,6 +118,7 @@ bool findMyInv(int ID, CirGate* prev)
       if(fanin[i].getPin()->getGateID() == ID) 
          return fanin[i].getInvPhase();
    }
+   return false;
 }
 
 void printSpace(int n)

@@ -1,8 +1,1 @@
-cirr tests.fraig/opt06.aag
-cirp -s
-cirp -n
-cirp -pi
-cirp -po
-cirp -fl
-cirg 10 -fanin 3
-cirg 1 -fanout 5
+cirr tests.err/err43.aag
