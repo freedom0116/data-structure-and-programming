@@ -150,6 +150,14 @@ parseError(CirParseError err)
 /*   class CirMgr member functions for circuit construction   */
 /**************************************************************/
 int myId2Num(int, bool);
+void resetValue()
+{
+   lineNo = 0;
+   colNo = 0;
+   errMsg = "";
+   errInt = 0;
+   errGate = NULL;
+}
 
 bool
 CirMgr::readCircuit(const string& fileName)
@@ -160,9 +168,10 @@ CirMgr::readCircuit(const string& fileName)
    vector<vector<int>> PoFanin, AIGFanin;
    inputfile.open(fileName);
    if(!inputfile) {
-      cerr << "Can not open design \"" << fileName << "\"!!" << endl;
+      cerr << "Cannot open design \"" << fileName << "\"!!" << endl;
       return false;
    }
+   resetValue();
    if(!readHeader(inputfile, state)) return false;
    _totalList.resize(state[0]+state[3]+1);
    CirGate* const0 = new Const0();
@@ -251,11 +260,11 @@ CirMgr::readHeader(fstream& file, vector<int>& state)
          else if(i == 4){ errMsg = "number of POs(" + sections[i] + ")"; return parseError(ILLEGAL_NUM); }
          else if(i == 5){ errMsg = "number of AIGs(" + sections[i] + ")"; return parseError(ILLEGAL_NUM); }
       }
-   }
+   }   
+   if(missNewLine) return parseError(MISSING_NEWLINE);
    int ILA = state[1] + state[2] + state[4];
    if(ILA > state[0]) { errMsg = "Number of variables"; errInt = state[0]; return parseError(NUM_TOO_SMALL); }
    if(state[2] != 0){ errMsg = "latches"; return parseError(ILLEGAL_NUM); }
-   if(missNewLine) return parseError(MISSING_NEWLINE);
    lineNo++;
    return true;
 }
@@ -318,13 +327,12 @@ CirMgr::readOutput(fstream& file, int& M, vector<vector<int>>& fanin)
    if(_poList.empty()){ ID = (M + 1) * 2; }
    else{ ID = (_poList[_poList.size() - 1]->getGateID() + 1) * 2; }
 
-   if(num == 0 || num == 1){ colNo = 0; errInt = num; return parseError(REDEF_CONST); }
-   for(int i = 0, s = _piList.size(); i < s; i++){
-      if(num/2 == _piList[i]->getGateID()){ 
-         errInt = num; errGate = _piList[i]; 
-         return parseError(REDEF_GATE); 
-      }
-   }
+   // for(int i = 0, s = _piList.size(); i < s; i++){
+   //    if(num/2 == _piList[i]->getGateID()){ 
+   //       errInt = num; errGate = _piList[i]; 
+   //       return parseError(REDEF_GATE); 
+   //    }
+   // }
    for(int i = 0, s = fanin.size(); i < s; i++){
       if(num == fanin[i][1]){ 
          errInt = num; errGate = _totalList[fanin[i][0]]; 
@@ -363,7 +371,7 @@ CirMgr::readAig(fstream& file, int& M, vector<vector<int>>& fanin)
       if(num > (M*2+1)) { colNo = 0; errInt = num; return parseError(MAX_LIT_ID); }
    }else{ errMsg = sections[0]; return parseError(MISSING_NUM); }
    ID2 = num;
-   if(ID2/2 == 0 || ID2/2 == 1){ colNo = 0; errInt = ID2/2; return parseError(REDEF_CONST); }
+   if(ID2 == 0 || ID2 == 1){ colNo = 0; errInt = ID2; return parseError(REDEF_CONST); }
    for(int i = 0, s = _piList.size(); i < s; i++){
       if(ID2/2 == _piList[i]->getGateID()){ 
          errInt = ID2; errGate = _piList[i]; 
@@ -380,18 +388,20 @@ CirMgr::readAig(fstream& file, int& M, vector<vector<int>>& fanin)
    string str_i = to_string(ID2/2);
    colNo = str_i.size();
    for(int i = 1; i < 3; i++){
+      colNo += 1;
       if(myStr2Int(sections[i], num)){
          if(num < 0) { errInt = num; return parseError(NUM_TOO_SMALL); }
          if(num > (M*2+1)) { errInt = num; return parseError(MAX_LIT_ID);
          }
       }else{ errMsg = sections[i]; return parseError(MISSING_NUM); }
       str_i = to_string(num);
-      colNo += (str_i.size()+1);
+      colNo += (str_i.size());
       gate.push_back(num);
    }
    if(missNewLine) return parseError(MISSING_NEWLINE);
 
    CirGate* AIG = new AndGate(ID2, ++lineNo);
+   _aigList.push_back(AIG);
    _totalList[ID2/2] = AIG;
    fanin.push_back(gate);
    return true;
@@ -404,43 +414,75 @@ CirMgr::readSymbol(fstream& file, bool& stopRun)
    string I;
    vector<string> sections;
    getline(file, I);
-   if(I == "") { return parseError(ILLEGAL_SYMBOL_TYPE); }
-   cutPiece(I, sections, 2, missNewLine);
-   for(int i = 0, s = I.size(); i < s; i++){
-      
+   if(I == "") {
+      if(file.eof()) cout<<"end"<<endl;
+      if(!file.eof()){ colNo = 0; errMsg = ""; return parseError(ILLEGAL_SYMBOL_TYPE); }
+      stopRun = true; return true;
    }
 
+   int begin = 0, end = 0, pinID;
+   bool prevSpace = false;
+   for(int i = 0, s = I.length(); i <= s; i++){
+      if(sections.size() == 2){ missNewLine = true; return true; }
+      colNo = i;
+      if(I[0] == ' ') return parseError(EXTRA_SPACE);
+      else if(I[0] == '\t') { errInt = 9; return parseError(ILLEGAL_WSPACE); }
+      if(I[i] != ' ' && I[i] != '\t' && I[i] != '\0'){
+         if(!isalnum(I[i])){
+            errInt = stoi(to_string(I[i]));
+            return parseError(ILLEGAL_SYMBOL_NAME);
+         }
+      }
+      if(prevSpace == true){
+         if(I[i] == '\t') return parseError(EXTRA_SPACE);
+         else{ prevSpace = false; begin = i; }
+      }else{
+         end = i;
+         if(I[i] == ' '){
+            sections.push_back(I.substr(begin, end - begin));
+            prevSpace = true;
+         }else if(I[i] == '\t'){
+            if(i != 1) return parseError(MISSING_SPACE);
+            else { errInt = 9; return parseError(ILLEGAL_WSPACE); }
+         }
+         if(end == s){
+            string w = I.substr(begin, end - begin + 1);
+            if(w != "") sections.push_back(w);
+         }
+         if(sections.size() == 1){
+            if(sections[0].size() == 1){ 
+               if(sections[0] == "c"){ 
+                  if(I[i] != '\0') return parseError(MISSING_NEWLINE);
+                  _commentList.push_back("c");
+                  stopRun = true; return true;
+               }
+               else if(sections[0] != "i" && sections[0] != "o")
+                  { colNo = 0; errMsg = sections[0]; return parseError(ILLEGAL_SYMBOL_TYPE); }
+               else{ colNo = 1; return parseError(EXTRA_SPACE); }
+            }
+            else{
+               char setIO = sections[0][0];
+               string id = sections[0].substr(1, sections[0].size()-1);
+               if(setIO != 'i' && setIO != 'o')
+                  { colNo = 0; errMsg = sections[0][0]; return parseError(ILLEGAL_SYMBOL_TYPE); }
+               if(!myStr2Int(id, pinID))
+                  { errMsg = "symbol index("+id+")"; return parseError(ILLEGAL_NUM); }
+               if(setIO == 'i'){
+                  if(pinID > _piList.size()){ errMsg = "PI index"; errInt = pinID; return parseError(NUM_TOO_BIG); }
+                  if(_piList[pinID]->getSymbols() != ""){ errMsg = "i"; errInt = pinID; return parseError(REDEF_SYMBOLIC_NAME); }
+               }else if(setIO == 'o'){
+                  if(pinID > _poList.size()){ errMsg = "PO index"; errInt = pinID; return parseError(NUM_TOO_BIG); }
+                  if(_poList[pinID]->getSymbols() != ""){ errMsg = "o"; errInt = pinID; return parseError(REDEF_SYMBOLIC_NAME); }                  
+               }
+            }
+         }
+      }
+   }
+   if(sections.size() == 1) { errMsg = "symbolic name"; return parseError(MISSING_IDENTIFIER); }
+   if(missNewLine) return parseError(MISSING_NEWLINE);
+   if(sections[0][0] == 'i')_piList[pinID]->setSymbols(sections[1]);
+   else if(sections[0][0] == 'o')_poList[pinID]->setSymbols(sections[1]);
 
-   if(sections.size() == 1){
-      if(sections[0] == "c") { 
-         _commentList.push_back("c");
-         stopRun = true; return true;
-      }
-      return false;
-   }
-
-   if(sections[0].size() == 1){ colNo = 1; return parseError(EXTRA_SPACE);  }
-   char setIO = sections[0][0];
-   string id = sections[0].substr(1, sections[0].size()-1);
-   int pinID; myStr2Int(id, pinID);
-   if(setIO == 'i'){
-      if(_piList[pinID] == 0) {
-         cerr << "number wrong" << endl; return false;
-      }
-      if(missNewLine) return parseError(MISSING_NEWLINE);
-      _piList[pinID]->setSymbols(sections[1]);
-   }
-   else if(setIO == 'o'){
-      if(_poList[pinID] == 0) {
-         cerr << "number wrong" << endl; return false;
-      }
-      if(missNewLine) return parseError(MISSING_NEWLINE);
-      _poList[pinID]->setSymbols(sections[1]);
-   }
-   else{
-      cerr << "wrong pin select" << endl;
-      return false;
-   }
    lineNo++;
    return true;   
 }
@@ -462,11 +504,12 @@ CirMgr::cutPiece(string& pharse, vector<string>& words, int wordNum, bool& missN
    int begin = 0, end = 0;
    bool prevSpace = false;
    for(int i = 0, s = pharse.length(); i <= s; i++){
-      if(words.size() == wordNum) missNewLine = true;
+      if(words.size() == wordNum) {missNewLine = true; return true; }
       colNo = i;
       if(pharse[0] == ' ') return parseError(EXTRA_SPACE);
       else if(pharse[0] == '\t') { errInt = 9; return parseError(ILLEGAL_WSPACE); }
       if(prevSpace == true){
+         if(wordNum == 6 && pharse[i] == '\t') { errInt = 9; return parseError(ILLEGAL_WSPACE); }
          if(pharse[i] == ' ' || pharse[i] == '\t') return parseError(EXTRA_SPACE);
          else{ prevSpace = false; begin = i; }
       }else{
@@ -474,7 +517,10 @@ CirMgr::cutPiece(string& pharse, vector<string>& words, int wordNum, bool& missN
          if(pharse[i] == ' '){
             words.push_back(pharse.substr(begin, end - begin));
             prevSpace = true;
-         }else if(pharse[i] == '\t') return parseError(MISSING_SPACE);
+         }else if(pharse[i] == '\t'){
+            if(wordNum == 2){ errInt = 9; return parseError(ILLEGAL_WSPACE); }
+            return parseError(MISSING_SPACE);
+         }
          if(end == s){
             string w = pharse.substr(begin, end - begin + 1);
             if(w != "") words.push_back(w);
@@ -622,6 +668,11 @@ CirMgr::printFloatGates() const
 {
    vector<Pin> fanin;
    vector<int> floatInGate, NoOutGate;
+   CirGate* inPin;
+   for(int i = 0, s = _piList.size(); i < s; i++){
+      if(_piList[i]->getFanout().size() == 0)
+         NoOutGate.push_back(_piList[i]->getGateID());
+   }
    for(int i = 0, s = _aigList.size(); i < s; i++){
       fanin = _aigList[i]->getFanin();
       for(int j = 0, inSize = fanin.size(); j < inSize; j++){
@@ -632,6 +683,11 @@ CirMgr::printFloatGates() const
       }
       if(_aigList[i]->getFanout().size() == 0)
          NoOutGate.push_back(_aigList[i]->getGateID());
+   }
+   for(int i = 0, s = _poList.size(); i < s; i++){
+      inPin = _poList[i]->getFanin()[0].getPin();
+      if(typeid(*inPin) == typeid(UnDef)) 
+         floatInGate.push_back(_poList[i]->getGateID());
    }
    if(floatInGate.size() > 0){
       cout << "Gates with floating fanin(s):";

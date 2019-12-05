@@ -41,7 +41,7 @@ CirGate::dfsTraversal(GateList& dfsList)
          next->dfsTraversal(dfsList);
       }
    }
-   dfsList.push_back(this);
+   if(typeid(*this) != typeid(UnDef)) dfsList.push_back(this);
 }
 
 void

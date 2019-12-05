@@ -1,5 +1,0 @@
-cir> cirr tests.err/err43.aag
-[ERROR] Line 9, Col 2: Missing space character!!
-
-cir> 
-cir> 
