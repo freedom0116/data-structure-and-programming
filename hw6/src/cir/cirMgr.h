@@ -65,7 +65,6 @@ private:
   void setFanIO(vector<vector<int>>&);
 
   void dfsTraversal(const GateList&);
-  void insertSort(GateList&);
   void sortFanout();
 };
 

@@ -189,9 +189,6 @@ CirMgr::readCircuit(const string& fileName)
    setFanIO(PoFanin);
    setFanIO(AIGFanin);
    dfsTraversal(_poList);
-   // insertSort(_piList);
-   // insertSort(_poList);
-   // insertSort(_aigList);
    sortFanout();
 
    bool stopRun = false;
@@ -199,24 +196,6 @@ CirMgr::readCircuit(const string& fileName)
       if(!readSymbol(inputfile, stopRun)) return false;
    }
    while(readComment(inputfile)){}
-
-   // for(int i = 0; i < _totalList.size(); i++){
-   //    if(_totalList[i] != 0){
-   //       cout<<i<<" " <<"in:";
-   //       for(int j = 0; j <_totalList[i]->getFanin().size();j++){
-   //          cout<<" ";
-   //          if(_totalList[i]->getFanin()[j].getInvPhase() == true) cout<<"!";
-   //          cout<<_totalList[i]->getFanin()[j].getPin()->getGateID();
-   //       }
-   //       cout<<"out:";
-   //       for(int j = 0; j <_totalList[i]->getFanout().size();j++){
-   //          cout<<" ";
-   //          if(_totalList[i]->getFanout()[j].getInvPhase() == true) cout<<"!";
-   //          cout<<_totalList[i]->getFanout()[j].getPin()->getGateID();
-   //       }
-   //       cout<<endl;
-   //    }
-   // }
    return true;
 }
 
@@ -283,7 +262,6 @@ CirMgr::readInput(fstream& file, int& M)
    }
    if(!cutPiece(I, sections, 1, missNewLine)) return false;
    if(myStr2Int(sections[0], num)){
-      if(num < 0) { errInt = num; return parseError(NUM_TOO_SMALL); }
       if(num > (M*2+1)) { colNo = 0; errInt = num; return parseError(MAX_LIT_ID); }
    }else{ errMsg = sections[0]; return parseError(MISSING_NUM); }
 
@@ -321,18 +299,11 @@ CirMgr::readOutput(fstream& file, int& M, vector<vector<int>>& fanin)
    }
    if(!cutPiece(I, sections, 1, missNewLine)) return false;
    if(myStr2Int(sections[0], num)){
-      if(num < 0) { errInt = num; return parseError(NUM_TOO_SMALL); }
       if(num > (M*2+1)) { colNo = 0; errInt = num; return parseError(MAX_LIT_ID); }
    }else{ errMsg = sections[0]; return parseError(MISSING_NUM); }
    if(_poList.empty()){ ID = (M + 1) * 2; }
    else{ ID = (_poList[_poList.size() - 1]->getGateID() + 1) * 2; }
 
-   // for(int i = 0, s = _piList.size(); i < s; i++){
-   //    if(num/2 == _piList[i]->getGateID()){ 
-   //       errInt = num; errGate = _piList[i]; 
-   //       return parseError(REDEF_GATE); 
-   //    }
-   // }
    for(int i = 0, s = fanin.size(); i < s; i++){
       if(num == fanin[i][1]){ 
          errInt = num; errGate = _totalList[fanin[i][0]]; 
@@ -367,7 +338,6 @@ CirMgr::readAig(fstream& file, int& M, vector<vector<int>>& fanin)
    if(sections.size() < 3){ return parseError(MISSING_SPACE); }
 
    if(myStr2Int(sections[0], num)){
-      if(num < 0) { errInt = num; return parseError(NUM_TOO_SMALL); }
       if(num > (M*2+1)) { colNo = 0; errInt = num; return parseError(MAX_LIT_ID); }
    }else{ errMsg = sections[0]; return parseError(MISSING_NUM); }
    ID2 = num;
@@ -390,9 +360,7 @@ CirMgr::readAig(fstream& file, int& M, vector<vector<int>>& fanin)
    for(int i = 1; i < 3; i++){
       colNo += 1;
       if(myStr2Int(sections[i], num)){
-         if(num < 0) { errInt = num; return parseError(NUM_TOO_SMALL); }
-         if(num > (M*2+1)) { errInt = num; return parseError(MAX_LIT_ID);
-         }
+         if(num > (M*2+1)) { errInt = num; return parseError(MAX_LIT_ID); }
       }else{ errMsg = sections[i]; return parseError(MISSING_NUM); }
       str_i = to_string(num);
       colNo += (str_i.size());
@@ -556,22 +524,6 @@ CirMgr::dfsTraversal(const GateList& sinkList)
    CirGate::setGlobalRef();
    for(int i = 0, s = sinkList.size(); i < s; i++){
       sinkList[i]->dfsTraversal(_dfsList);
-   }
-}
-
-void 
-CirMgr::insertSort(GateList& list)
-{
-   CirGate* temp;
-   GateList::iterator iter = list.begin(), comp;
-   for(; iter != list.end(); iter++){
-      for(comp = list.begin(); comp != iter; comp++){
-         if((*iter)->getGateID() < (*comp)->getGateID()){
-            temp = *comp;
-            *comp = *iter;
-            *iter = temp;
-         }
-      }
    }
 }
 
