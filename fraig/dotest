@@ -1,0 +1,4 @@
+cirr ./tests.fraig/opt07.aag
+cirp
+cirsweep
+cirp

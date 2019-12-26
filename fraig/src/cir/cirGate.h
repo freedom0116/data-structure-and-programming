@@ -32,6 +32,8 @@ public:
   ~Pin() {}
   CirGate* getPin() const { return _pin; }
   bool getInvPhase() const { return _invPhase; }
+  void setPin(CirGate* n){ _pin = n; }
+  void setPhase(bool p){ _invPhase = p; }
 
 private:
   CirGate* _pin;
@@ -45,6 +47,11 @@ public:
     { (num%2 == 0)? _invPhase = false :  _invPhase = true; _ref = 0; }
   virtual ~CirGate() {}
 
+  // Operator
+  bool operator == (CirGate*& gate) const { return _gateID == gate->getGateID(); }
+  bool operator != (CirGate*& gate) const { return _gateID != gate->getGateID(); }
+
+  //  For depth-first search
   static void setGlobalRef() { _globalRef++; }
   void setToGlobalRef() const { _ref = _globalRef; }
   bool isGlobalRef() const { return (_ref == _globalRef); }
@@ -74,7 +81,9 @@ public:
   void fanoutTraversal(const int& level, int dist) const;
 
   // For sweep
-  void adjustFanout(CirGate*);
+  void adjustFanoutState(CirGate*);
+  void adjustFaninState(CirGate*);
+  
 
 private:
 protected:

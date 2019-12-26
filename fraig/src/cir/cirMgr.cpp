@@ -382,7 +382,6 @@ CirMgr::readSymbol(fstream& file, bool& stopRun)
    vector<string> sections;
    getline(file, I);
    if(I == "") {
-      if(file.eof()) cout<<"end"<<endl;
       if(!file.eof()){ colNo = 0; errMsg = ""; return parseError(ILLEGAL_SYMBOL_TYPE); }
       stopRun = true; return true;
    }
@@ -395,7 +394,8 @@ CirMgr::readSymbol(fstream& file, bool& stopRun)
       if(I[0] == ' ') return parseError(EXTRA_SPACE);
       else if(I[0] == '\t') { errInt = 9; return parseError(ILLEGAL_WSPACE); }
       if(I[i] != ' ' && I[i] != '\t' && I[i] != '\0'){
-         if(!isalnum(I[i])){
+         int ascii = (int)I[i];
+         if(I[i] < 33 || I[i] > 126){
             errInt = stoi(to_string(I[i]));
             return parseError(ILLEGAL_SYMBOL_NAME);
          }

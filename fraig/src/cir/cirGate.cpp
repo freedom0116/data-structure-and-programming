@@ -189,16 +189,38 @@ string getIdDate(const CirGate* pin, string gateName)
 }
 
 void
-CirGate::adjustFanout(CirGate* newPin)
+CirGate::adjustFanoutState(CirGate* newPin)
 {
+   bool allZerofanin;
    for(int i = 0, s = _fanoutList.size(); i < s; i++){
+      allZerofanin = true;
       CirGate* fanout = _fanoutList[i].getPin();
-      for(int j = 0, os = fanout->_faninList.size(); j < os; j++){
-         if(_faninList[j].getPin() == this){
-            _faninList.erase(_faninList.begin()+j);
-            setFanin(newPin, false);
+      vector<Pin>::iterator it = fanout->_faninList.begin();
+      for(; it != fanout->_faninList.end(); it++){
+         if((*it).getPin() == this){
+            (*it).setPin(newPin);
+            (*it).setPhase(false);
          }
+         if((*it).getPin() != newPin) allZerofanin = false;
       }
+      if(allZerofanin == true) fanout->adjustFanoutState(newPin);
    }
    newPin->setFanout(this, false);
+}
+
+void
+CirGate::adjustFaninState(CirGate* newPin)
+{
+   for(int i = 0, s = _faninList.size(); i < s; i++){
+      CirGate* fanin = _faninList[i].getPin();
+      if(fanin != newPin){
+         vector<Pin>::iterator it = fanin->_fanoutList.begin();
+         for(; it != fanin->_fanoutList.end(); ){
+            if((*it).getPin() == this) fanin->_fanoutList.erase(it);
+            else it++;
+         }
+         _faninList[i].setPin(newPin);
+         _faninList[i].setPhase(false);
+      }
+   }
 }
