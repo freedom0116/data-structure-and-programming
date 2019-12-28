@@ -25,7 +25,7 @@ extern CirMgr *cirMgr;
 class CirMgr
 {
 public:
-   CirMgr() {}
+   CirMgr(): _isSimulated(false) {}
    ~CirMgr() {} 
 
    // Access functions
@@ -71,6 +71,8 @@ private:
    GateList _totalList;
    GateList _dfsList;
    vector<string> _commentList;
+
+   bool _isSimulated;
    
    // funtions use in readCircuit
    bool readHeader(fstream&, vector<int>&);
@@ -84,6 +86,12 @@ private:
 
    // Depth-first search 
    void dfsTraversal(const GateList&);
+
+   // For optimization
+   bool checkFanin(CirGate*);
+   bool OptExecute(int, CirGate*, CirGate* nonZero = 0);
+   void updateAIG();
+   void updateDfs();
 };
 
 #endif // CIR_MGR_H

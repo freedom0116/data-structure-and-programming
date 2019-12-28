@@ -555,7 +555,7 @@ CirMgr::printSummary() const
 void
 CirMgr::printNetlist() const
 {
-   vector<Pin> fanin;
+   vector<Pin*> fanin;
    cout << endl;
    for(int i = 0, s = _dfsList.size(); i < s; i++){
       cout << "[" << i << "] ";
@@ -577,9 +577,9 @@ CirMgr::printNetlist() const
          fanin = _dfsList[i]->getFanin();
          for(int j = 0, s = fanin.size(); j < s; j++){
             cout << " ";
-            if(typeid(*(fanin[j].getPin())) == typeid(UnDef)) cout << "*";
-            if(fanin[j].getInvPhase()) cout << "!";
-            cout << fanin[j].getPin()->getGateID();
+            if(typeid(*(fanin[j]->getPin())) == typeid(UnDef)) cout << "*";
+            if(fanin[j]->getInvPhase()) cout << "!";
+            cout << fanin[j]->getPin()->getGateID();
          } 
          if(_dfsList[i]->getSymbols() != ""){
             cout << " (" << _dfsList[i]->getSymbols() << ")";
@@ -609,7 +609,7 @@ CirMgr::printPOs() const
 void
 CirMgr::printFloatGates() const
 {
-   vector<Pin> fanin;
+   vector<Pin*> fanin;
    vector<int> floatInGate, NoOutGate;
    CirGate* inPin;
    for(int i = 0, s = _piList.size(); i < s; i++){
@@ -619,7 +619,7 @@ CirMgr::printFloatGates() const
    for(int i = 0, s = _aigList.size(); i < s; i++){
       fanin = _aigList[i]->getFanin();
       for(int j = 0, inSize = fanin.size(); j < inSize; j++){
-         if(typeid(*(fanin[j].getPin())) == typeid(UnDef)){
+         if(typeid(*(fanin[j]->getPin())) == typeid(UnDef)){
             floatInGate.push_back(_aigList[i]->getGateID());
             break;
          }
@@ -628,7 +628,7 @@ CirMgr::printFloatGates() const
          NoOutGate.push_back(_aigList[i]->getGateID());
    }
    for(int i = 0, s = _poList.size(); i < s; i++){
-      inPin = _poList[i]->getFanin()[0].getPin();
+      inPin = _poList[i]->getFanin()[0]->getPin();
       if(typeid(*inPin) == typeid(UnDef)) 
          floatInGate.push_back(_poList[i]->getGateID());
    }
@@ -657,7 +657,7 @@ CirMgr::writeAag(ostream& outfile) const
 {
    // header
    int M =  _totalList.size() - _poList.size() - 1, A = 0;
-   vector<Pin> fanin;
+   vector<Pin*> fanin;
    for(int i = 0, s = _dfsList.size(); i < s; i++){
       if(typeid(*_dfsList[i]) == typeid(AndGate)) A++;
    }
@@ -668,7 +668,7 @@ CirMgr::writeAag(ostream& outfile) const
    }
    // PO
    for(int i = 0, s = _poList.size(); i < s; i++){
-      outfile << myId2Num(_poList[i]->getFanin()[0].getPin()->getGateID(), _poList[i]->getFanin()[0].getInvPhase()) << endl;
+      outfile << myId2Num(_poList[i]->getFanin()[0]->getPin()->getGateID(), _poList[i]->getFanin()[0]->getInvPhase()) << endl;
    }
    // AIG
    for(int i = 0, s = _dfsList.size(); i < s; i++){
@@ -676,7 +676,7 @@ CirMgr::writeAag(ostream& outfile) const
          outfile << myId2Num(_dfsList[i]->getGateID(), _dfsList[i]->getInvPhase());
          fanin = _dfsList[i]->getFanin();
          for(int j = 0, faninSize = fanin.size(); j < faninSize; j++){
-            outfile << " " << myId2Num(fanin[j].getPin()->getGateID(), fanin[j].getInvPhase());
+            outfile << " " << myId2Num(fanin[j]->getPin()->getGateID(), fanin[j]->getInvPhase());
          } outfile << endl;
       }      
    }

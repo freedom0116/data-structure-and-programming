@@ -61,15 +61,21 @@ public:
   virtual string getTypeStr() const = 0;
   virtual bool isAig() const { return false; }
   int getGateID() const { return _gateID; }
+  void setGateID(int id) { _gateID = id; }
   unsigned getLineNo() const { return _lineNO; }
   bool getInvPhase() const { return _invPhase; }
-  string getSymbols() const { return _symbols; }
+  const string& getSymbols() const { return _symbols; }
   void setSymbols(string s) { _symbols = s; }
 
-  vector<Pin> getFanin() const { return _faninList; }
-  vector<Pin> getFanout() const{ return _fanoutList; }
-  void setFanin(CirGate* ID, bool phase = false) { Pin inpin(ID, phase); _faninList.push_back(inpin); }
-  void setFanout(CirGate* ID, bool phase = false) { Pin outpin(ID, phase); _fanoutList.push_back(outpin); }
+  // Fanin/out access methods
+  vector<Pin*> getFanin() const { return _faninList; }
+  vector<Pin*> getFanout() const { return _fanoutList; }
+  void setFanin(CirGate* ID, bool phase = false)
+    { Pin* inpin = new Pin(ID, phase); _faninList.push_back(inpin); }
+  void setFanout(CirGate* ID)
+    { Pin* outpin = new Pin(ID, false); _fanoutList.push_back(outpin); }
+  void removeFanout(int it){ _fanoutList.erase(_fanoutList.begin()+it); }
+  void removeFanin(int it){ _faninList.erase(_faninList.begin()+it); }
 
   // Printing functions
   virtual void printGate() const = 0;
@@ -80,9 +86,15 @@ public:
   void faninTraversal(const int& level, int dist) const;
   void fanoutTraversal(const int& level, int dist) const;
 
-  // For sweep
-  void adjustFanoutState(CirGate*);
-  void adjustFaninState(CirGate*);
+  // For sweep / optimization
+  void sweep();
+
+  // For optimization
+  // void checkFanin();
+  void faninOne(CirGate* one, CirGate* replace);
+  void faninZero(CirGate* zero, CirGate* eliminate);
+  void sameFanin(CirGate* inGate);
+  void inverseFanin(CirGate* zero, CirGate* inGate);
   
 
 private:
@@ -92,8 +104,8 @@ protected:
   bool _invPhase;
   string _symbols;
 
-  vector<Pin> _faninList;
-  vector<Pin> _fanoutList;
+  vector<Pin*> _faninList;
+  vector<Pin*> _fanoutList;
   static size_t _globalRef;
   mutable size_t _ref;
 };

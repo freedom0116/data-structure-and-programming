@@ -1,4 +1,4 @@
-cirr ../tests.fraig/opt07.aag
+cirr ../tests.fraig/my05.aag
 cirp
 cirsweep
 cirp
