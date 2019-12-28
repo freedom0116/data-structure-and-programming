@@ -32,7 +32,7 @@ public:
    // return '0' if "gid" corresponds to an undefined gate.
    CirGate* getGate(unsigned gid) const {
       if(gid < _totalList.size() && _totalList[gid] != 0)
-      return _totalList[gid];
+         return _totalList[gid];
       return 0;
    }
 
@@ -91,7 +91,6 @@ private:
    bool checkFanin(CirGate*);
    bool OptExecute(int, CirGate*, CirGate* nonZero = 0);
    void updateAIG();
-   void updateDfs();
 };
 
 #endif // CIR_MGR_H

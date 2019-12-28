@@ -1,4 +1,5 @@
 cirr ./tests.fraig/my05.aag
 cirp
-cirsweep
+ciropt
 cirp
+

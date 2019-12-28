@@ -82,11 +82,13 @@ CirMgr::optimize()
   else{
     vector<Pin> fanin;
     for(int i = 0, s = _totalList.size(); i < s; i++){
-      if(typeid(*_totalList[i]) == typeid(UnDef)){
-        OptExecute(FANIN_ZERO, _totalList[i]);
-      }
-      else if(typeid(*_totalList[i]) == typeid(AndGate)){
-        checkFanin(_totalList[i]);
+      if(_totalList[i] != 0){
+        if(typeid(*_totalList[i]) == typeid(UnDef)){
+          OptExecute(FANIN_ZERO, _totalList[i]);
+        }
+        else if(typeid(*_totalList[i]) == typeid(AndGate)){
+          checkFanin(_totalList[i]);
+        }
       }
     }
     updateAIG();
@@ -140,12 +142,14 @@ CirMgr::OptExecute(int type, CirGate* gate, CirGate* nonZero)
       gate->inverseFanin(Const0, nonZero);
       break;
   }
+
+  int id = gate->getGateID();
   if(typeid(*gate) == typeid(UnDef)){
-    delete _totalList[gate->getGateID()];
-    _totalList[gate->getGateID()] = NULL;        
+    delete _totalList[id];
+    _totalList[id] = 0;        
   }else if(typeid(*gate) == typeid(AndGate)){
-    _totalList[gate->getGateID()]->setGateID(-1);
-    _totalList[gate->getGateID()] = NULL;
+    _totalList[id]->setGateID(-1);
+    _totalList[id] = 0;
   }
   return true;
 }
@@ -162,14 +166,3 @@ CirMgr::updateAIG()
   }
 }
 
-void 
-CirMgr::updateDfs()
-{
-  GateList::iterator it = _dfsList.begin();
-  while(it != _dfsList.end()){
-    if((*it)->getGateID() == -1){
-      (*it) = NULL;
-      _dfsList.erase(it);
-    }else{ it++; }
-  }
-}
