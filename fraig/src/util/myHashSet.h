@@ -48,8 +48,33 @@ public:
       friend class HashSet<Data>;
 
    public:
+      iterator(vector<Data>* s = 0, size_t num = 0, size_t p = 0, size_t node = 0)
+               : _slot(s), _bucketSize(num), _pos(p), _nodeNum(node) {}
+      iterator(const iterator& i): _slot(i._slot), _nodeNum(i._nodeNum) {}
+      ~iterator() {}
 
+      const Data& operator * () const { return (*(_slot+_pos))[_nodeNum]; }
+      iterator& operator ++ () {
+         if(_nodeNum+1 < (_slot+_pos)->size()) { _nodeNum++; }
+         else{ 
+            do{
+               if(++_pos == _bucketSize) break;
+            }while((_slot+_pos)->size() == 0);
+            _nodeNum = 0;
+         }
+         return (*this); 
+      }
+      bool operator == (const iterator& i) const { 
+         if(_pos == i._pos && _nodeNum == i._nodeNum) return true;
+         return false;
+      }
+      bool operator != (const iterator& i) const { 
+         if(_pos != i._pos || _nodeNum != i._nodeNum) return true;
+         return false;
+      }
    private:
+      vector<Data>* _slot;
+      size_t _bucketSize, _pos, _nodeNum;
    };
 
    void init(size_t b) { _numBuckets = b; _buckets = new vector<Data>[b]; }
@@ -68,36 +93,92 @@ public:
    // TODO: implement these functions
    //
    // Point to the first valid data
-   iterator begin() const { return iterator(); }
+   iterator begin() const { 
+      if(empty()) return end();
+      int pos = 0;
+      while((_buckets+pos  )->size() == 0){ pos++; }
+      return iterator(_buckets, numBuckets(), pos); 
+   }
    // Pass the end
-   iterator end() const { return iterator(); }
+   iterator end() const {
+      if(empty()) return iterator(_buckets);
+      return iterator(_buckets, numBuckets(), numBuckets());
+   }
    // return true if no valid data
-   bool empty() const { return true; }
+   bool empty() const { return size() == 0; }
    // number of valid data
-   size_t size() const { size_t s = 0; return s; }
+   size_t size() const {
+      size_t s = 0;
+      for(size_t i = 0; i < _numBuckets; i++){
+         s += (_buckets+i)->size();
+      }
+      return s; 
+   }
 
    // check if d is in the hash...
    // if yes, return true;
    // else return false;
-   bool check(const Data& d) const { return false; }
+   bool check(const Data& d) const {
+      int num = bucketNum(d);
+      vector<Data> slot = *(_buckets+num);
+      for(int i = 0, s = slot.size(); i < s; i++){
+         if(d == slot[i]) return true;
+      }
+      return false; 
+   }
 
    // query if d is in the hash...
    // if yes, replace d with the data in the hash and return true;
    // else return false;
-   bool query(Data& d) const { return false; }
+   bool query(Data& d) const { 
+      int num = bucketNum(d);
+      vector<Data> slot = *(_buckets+num);
+      for(int i = 0, s = slot.size(); i < s; i++){
+         if(d == slot[i]){
+            d = slot[i];
+            return true;
+         }
+      }
+      return false; 
+   }
 
    // update the entry in hash that is equal to d (i.e. == return true)
    // if found, update that entry with d and return true;
    // else insert d into hash as a new entry and return false;
-   bool update(const Data& d) { return false; }
+   bool update(const Data& d) { 
+      int num = bucketNum(d);
+      for(int i = 0, s = (_buckets+num)->size(); i < s; i++){
+         if(d == (*(_buckets+num))[i]){
+            (*(_buckets+num))[i] = d;
+            return true;
+         }
+      }
+      (_buckets+num)->push_back(d);
+      return false; 
+   }
 
    // return true if inserted successfully (i.e. d is not in the hash)
    // return false is d is already in the hash ==> will not insert
-   bool insert(const Data& d) { return true; }
+   bool insert(const Data& d) { 
+      if(check(d)) return false;
+      int num = bucketNum(d);
+      (_buckets+num)->push_back(d);
+      return true;
+   }
 
    // return true if removed successfully (i.e. d is in the hash)
-   // return fasle otherwise (i.e. nothing is removed)
-   bool remove(const Data& d) { return false; }
+   // return false otherwise (i.e. nothing is removed)
+   bool remove(const Data& d) { 
+      int num = bucketNum(d);
+      vector<Data> slot = *(_buckets+num);
+      for(int i = 0, s = slot.size(); i < s; i++){
+         if(d == slot[i]){
+            slot.erase(slot.begin()+i);
+            return true;
+         }
+      }
+      return false; 
+   }
 
 private:
    // Do not add any extra data member

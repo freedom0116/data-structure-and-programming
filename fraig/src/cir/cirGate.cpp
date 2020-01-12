@@ -27,22 +27,16 @@ size_t CirGate::_globalRef = 0;
 /**************************************/
 /*   Static varaibles and functions   */
 /**************************************/
+static size_t mergePhase;
+static size_t replaceID;
+
 static void printDivider()
 {
-   for(int i = 0; i < 50; i++)
+   for(int i = 0; i < 80; i++)
       cout << "=";
    cout << endl;
 }
 
-static string getIdDate(const CirGate* pin, string gateName)
-{
-   string output;
-   output = "= " + gateName + "(" + to_string(pin->getGateID()) + ")";
-   if(pin->getSymbols() != "")
-      output = output + "\"" + pin->getSymbols() + "\"";
-   output = output + ", line " + to_string(pin->getLineNo());
-   return output;
-}
 static  bool findMyInv(int ID, CirGate* prev)
 {
    vector<Pin*> fanin = prev->getFanin();
@@ -79,15 +73,21 @@ static bool isFanin(CirGate* gate, CirGate* Tin, int& it)
    return false;
 }
 
-static string ifExclamation(bool b)
+static bool samePhase(CirGate* merge, CirGate* replace)
 {
-   if(b) return "!";
-   return "";
+   if(merge->getFanin()[0]->getPin()->getGateID() == merge->getFanin()[1]->getPin()->getGateID())
+      return false;
+   if(merge->getFanin()[0]->getPin()->getGateID() == replace->getFanin()[0]->getPin()->getGateID())
+      return (merge->getFanin()[0]->getPin()->getInvPhase() != replace->getFanin()[0]->getPin()->getInvPhase());
+   if(merge->getFanin()[0]->getPin()->getGateID() == replace->getFanin()[1]->getPin()->getGateID())
+      return (merge->getFanin()[0]->getPin()->getInvPhase() != replace->getFanin()[1]->getPin()->getInvPhase());
+   return true;
 }
 
 /**************************************/
 /*   class CirGate member functions   */
 /**************************************/
+
 void
 CirGate::dfsTraversal(GateList& dfsList)
 {  
@@ -175,39 +175,96 @@ void AndGate::printPin() const{ cout << "AIG " << this->getGateID(); }
 void UnDef::printPin() const{ cout << "UNDEF " << this->getGateID(); }
 void Const0::printPin() const{ cout << "CONST " << this->getGateID(); }
 
+string 
+CirGate::getIdData() const
+{
+   string output;
+   output = "= " + getTypeStr() + "(" + to_string(_gateID) + ")";
+   if(_symbols != "")
+      output = output + "\"" + _symbols + "\"";
+   output = output + ", line " + to_string(_lineNO);
+   return output;
+}
+
+string
+CirGate::getFECsData() const
+{
+   string output;
+   output = "= FECs:";
+   for(size_t i = 0, s = _FECs.size(); i < s; i++){
+      output = output + " ";
+      if( _pattern != _FECs[i]->getPatt()) output = output + "!";
+      output = output + to_string(_FECs[i]->getGateID());
+   }
+   return output;
+}
+
+string
+CirGate::getSimData() const
+{
+   size_t patt = _pattern, supply;
+   string output;
+   vector<int> value;
+   output = "= Value: ";
+   while(patt != 0){
+      value.push_back(patt%2);
+      patt = patt >> 1;
+   }
+   supply = 64 - value.size();
+   for(int i = 0, s =supply; i < s; i++){
+      output = output + "0";
+      if(i%8 == 7) output = output + "_";
+   }
+   for(int i = 0, s = value.size(); i < s; i++){
+      if(i != 0 && (i+supply)%8 == 0) output = output + "_";
+      if(value[value.size()-1-i] == 0) output = output + "0";
+      else output = output + "1";
+   }
+   return output;
+}
+
 void CirPiGate::printGate() const
 {
-   string data = getIdDate(this, "PI");
    printDivider();
-   cout << left << setw(49) << data << "=" << endl;
+   cout << getIdData() << endl;
+   cout << getFECsData() << endl;
+   cout << getSimData() << endl;
    printDivider();
 }
 void CirPoGate::printGate() const
 {
-   string data = getIdDate(this, "PO");
+   string data = getIdData();
    printDivider();
-   cout << left << setw(49) << data << "=" << endl;
+   cout << getIdData() << endl;
+   cout << getFECsData() << endl;
+   cout << getSimData() << endl;
    printDivider();
 }
 void AndGate::printGate() const
 {
-   string data = getIdDate(this, "AIG");
+   string data = getIdData();
    printDivider();
-   cout << left << setw(49) << data << "=" << endl;
+   cout << getIdData() << endl;
+   cout << getFECsData() << endl;
+   cout << getSimData() << endl;
    printDivider();
 }
 void UnDef::printGate() const
 {
-   string data = getIdDate(this, "UNDEF");
+   string data = getIdData();
    printDivider();
-   cout << left << setw(49) << data << "=" << endl;
+   cout << getIdData() << endl;
+   cout << getFECsData() << endl;
+   cout << getSimData() << endl;
    printDivider();
 }
 void Const0::printGate() const
 {
-   string data = getIdDate(this, "const");
+   string data = getIdData();
    printDivider();
-   cout << left << setw(49) << data << "=" << endl;
+   cout << getIdData() << endl;
+   cout << getFECsData() << endl;
+   cout << getSimData() << endl;
    printDivider();
 }
 
@@ -226,12 +283,6 @@ CirGate::sweep()
    for(int i = 0, s = _faninList.size(); i < s; i++){
       fanin = _faninList[i]->getPin();
       if(isFanout(fanin, this, it)) fanin->removeFanout(it);
-      
-      // vector<Pin*>::iterator it = fanin->_fanoutList.begin();
-      // for(; it != fanin->_fanoutList.end(); ){
-      //    if((*it)->getPin() == this) fanin->removeFanout(it);
-      //    else it++;
-      // }
    }
 }
 
@@ -239,22 +290,23 @@ void
 CirGate::faninOne(CirGate* one, CirGate* replace)
 {
    int it;
-   bool phase;
+   bool phase, inP;
    CirGate* fanout;
    isFanin(this, replace, it);
-   phase = _faninList[it]->getInvPhase();
+   inP = _faninList[it]->getInvPhase();
    if(isFanout(one, this, it)) one->removeFanout(it);
    if(isFanout(replace, this, it)) replace->removeFanout(it);
    for(int i = 0, s = _fanoutList.size(); i < s; i++){
       fanout = _fanoutList[i]->getPin();
       if(isFanin(fanout, this, it)){
+         phase = (inP != fanout->getFanin()[it]->getInvPhase());
          fanout->getFanin()[it]->setPin(replace);
          fanout->getFanin()[it]->setPhase(phase);
          replace->setFanout(fanout);
       }
    }
    cout << "Simplifying: "<< replace->getGateID() << " merging " 
-   << ifExclamation(phase) << _gateID << "..." << endl;
+   << (phase? "!" : "") << _gateID << "..." << endl;
 }
 
 void 
@@ -268,33 +320,36 @@ CirGate::faninZero(CirGate* zero, CirGate* eliminate)
       fanout = _fanoutList[i]->getPin();
       if(isFanin(fanout, this, it)){
          fanout->getFanin()[it]->setPin(zero);
-         fanout->getFanin()[it]->setPhase(false);
          zero->setFanout(fanout);
       }      
    }
+   cout << "Simplifying: 0 merging " << _gateID << "..." << endl;
 }
 
 void 
 CirGate::sameFanin(CirGate* inGate)
 {
    int it;
-   bool phase;
+   bool phase, inP;
    CirGate* fanout;
    isFanin(this, inGate, it);
-   phase = _faninList[it]->getInvPhase();
+   inP = _faninList[it]->getInvPhase();
    for(int i = 0; i < 2; i++)
       if(isFanout(inGate, this, it)) inGate->removeFanout(it);
    for(int i = 0, s = _fanoutList.size(); i < s; i++){
       fanout = _fanoutList[i]->getPin();
       if(isFanin(fanout, this, it)){
+         phase = (inP != fanout->getFanin()[it]->getInvPhase());
          fanout->getFanin()[it]->setPin(inGate);
          fanout->getFanin()[it]->setPhase(phase);
          inGate->setFanout(fanout);         
       }      
    }
    cout << "Simplifying: "<< inGate->getGateID() << " merging " 
-   << ifExclamation(phase) << _gateID << "..." << endl;
+   << (phase? "!" : "") << _gateID << "..." << endl;
 }
+
+
 
 void 
 CirGate::inverseFanin(CirGate* zero, CirGate* inGate)
@@ -307,10 +362,59 @@ CirGate::inverseFanin(CirGate* zero, CirGate* inGate)
       fanout = _fanoutList[i]->getPin();
       if(isFanin(fanout, this, it)){
          fanout->getFanin()[it]->setPin(zero);
-         fanout->getFanin()[it]->setPhase(false);
-         zero->setFanout(fanout); 
+         zero->setFanout(fanout);
       }
    }
-   
+   cout << "Simplifying: 0 merging " << _gateID << "..." << endl;
+}
 
+void
+CirGate::merge(CirGate* replace)
+{
+   int it;
+   bool sameP;
+   CirGate *fanin, *fanout;
+   sameP = samePhase(this, replace);
+   for(int i = 0; i < 2; i++){
+      fanin = replace->getFanin()[i]->getPin();
+      if(isFanout(fanin, replace, it)) fanin->removeFanout(it);
+   }
+   for(int i = 0, s = replace->getFanout().size(); i < s; i++){
+      fanout = replace->getFanout()[i]->getPin();
+      if(isFanin(fanout, replace, it)){
+         mergePhase = (sameP != fanout->getFanin()[it]->getInvPhase());
+         replaceID = replace->getGateID();
+         fanout->getFanin()[it]->setPin(this);
+         fanout->getFanin()[it]->setPhase(mergePhase);
+         this->setFanout(fanout);
+      }
+   }
+}
+
+void 
+CirGate::printMerge(int type)
+{
+   if(type == 0) cout << "Strashing: ";
+   else if(type == 1) cout << "Fraig: ";
+   cout << this->getGateID() << " merging " 
+   << (mergePhase? "!" : "") << replaceID << "..." << endl;
+}
+
+void
+CirPoGate::setPatt()
+{
+   if(_faninList[0]->getInvPhase())
+      _pattern = ~_faninList[0]->getPin()->getPatt();
+   else _pattern = _faninList[0]->getPin()->getPatt();   
+}
+
+void 
+AndGate::setPatt()
+{
+   if(_faninList[0]->getInvPhase())
+      _pattern = ~_faninList[0]->getPin()->getPatt();
+   else _pattern = _faninList[0]->getPin()->getPatt();
+   if(_faninList[1]->getInvPhase())
+      _pattern = _pattern & ~_faninList[1]->getPin()->getPatt();
+   else _pattern = _pattern & _faninList[1]->getPin()->getPatt();
 }

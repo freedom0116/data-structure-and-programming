@@ -43,7 +43,7 @@ private:
 class CirGate
 {
 public:
-  CirGate(int num = 0, int NO = 0): _gateID(num/2), _lineNO(NO)
+  CirGate(int num = 0, int NO = 0): _gateID(num/2), _lineNO(NO), _pattern(0)
     { (num%2 == 0)? _invPhase = false :  _invPhase = true; _ref = 0; }
   virtual ~CirGate() {}
 
@@ -68,8 +68,8 @@ public:
   void setSymbols(string s) { _symbols = s; }
 
   // Fanin/out access methods
-  vector<Pin*> getFanin() const { return _faninList; }
-  vector<Pin*> getFanout() const { return _fanoutList; }
+  const vector<Pin*>& getFanin() const { return _faninList; }
+  const vector<Pin*>& getFanout() const { return _fanoutList; }
   void setFanin(CirGate* ID, bool phase = false)
     { Pin* inpin = new Pin(ID, phase); _faninList.push_back(inpin); }
   void setFanout(CirGate* ID)
@@ -86,16 +86,29 @@ public:
   void faninTraversal(const int& level, int dist) const;
   void fanoutTraversal(const int& level, int dist) const;
 
-  // For sweep / optimization
+  // For sweep
   void sweep();
 
   // For optimization
-  // void checkFanin();
   void faninOne(CirGate* one, CirGate* replace);
   void faninZero(CirGate* zero, CirGate* eliminate);
   void sameFanin(CirGate* inGate);
   void inverseFanin(CirGate* zero, CirGate* inGate);
-  
+
+  // For strash
+  void merge(CirGate* replace);
+  void printMerge(int);
+
+  // For simulate
+  size_t getPatt() const { return _pattern; }
+  virtual void setPatt() {}
+  void setPatt(size_t p) { _pattern = p; }
+  void setFECs(CirGate* m) { _FECs.push_back(m); }
+  void resetFECs() { _FECs.clear(); }
+
+  // For fraig
+  const Var& getVar() const { return _var; }
+  void  setVar(Var v) { _var = v; }
 
 private:
 protected:
@@ -103,11 +116,19 @@ protected:
   int _lineNO;
   bool _invPhase;
   string _symbols;
+  size_t _pattern;
+  GateList _FECs;
+  Var _var;
 
   vector<Pin*> _faninList;
   vector<Pin*> _fanoutList;
   static size_t _globalRef;
   mutable size_t _ref;
+
+  // Printing gate
+  string getIdData() const;
+  string getFECsData() const;
+  string getSimData() const;
 };
 
 class CirPiGate: public CirGate
@@ -126,6 +147,7 @@ public:
   string getTypeStr() const{ return "PO"; }
   void printGate() const;
   void printPin() const;
+  void setPatt();
 };
 
 class AndGate: public CirGate
@@ -136,6 +158,7 @@ public:
   bool isAig() const { return true; }
   void printGate() const;
   void printPin() const;
+  void setPatt();
 };
 
 class UnDef: public CirGate

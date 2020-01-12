@@ -25,7 +25,7 @@ extern CirMgr *cirMgr;
 class CirMgr
 {
 public:
-   CirMgr(): _isSimulated(false) {}
+   CirMgr(): _isSimulate(false), _isStrash(false) {}
    ~CirMgr() {} 
 
    // Access functions
@@ -35,7 +35,7 @@ public:
          return _totalList[gid];
       return 0;
    }
-
+   
    // Member functions about circuit construction
    bool readCircuit(const string&);
 
@@ -72,7 +72,11 @@ private:
    GateList _dfsList;
    vector<string> _commentList;
 
-   bool _isSimulated;
+   vector<GateList> _FECList;
+   HashMap<SimKey, CirGate*> _fecGrps;
+
+   bool        _isSimulate;
+   bool        _isStrash;
    
    // funtions use in readCircuit
    bool readHeader(fstream&, vector<int>&);
@@ -90,7 +94,20 @@ private:
    // For optimization
    bool checkFanin(CirGate*);
    bool OptExecute(int, CirGate*, CirGate* nonZero = 0);
-   void updateAIG();
+   void updateList(GateList&);
+
+   // for simulation
+   void initFECHash();
+   void Hash2Vec();
+   void sortFEC();
+   void setFECsData();
+   // fileSim
+   void initInputFEC();
+
+   // for fraig
+   void genProofModel(SatSolver&);
+   void compFraig(SatSolver&, GateList&);
+   void reportResult(const SatSolver&, bool);
 };
 
 #endif // CIR_MGR_H

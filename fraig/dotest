@@ -1,5 +1,8 @@
-cirr ./tests.fraig/my05.aag
+cirr ./tests.fraig/sim01.aag
+cirsim -f ./tests.fraig/mypatt.01
 cirp
-ciropt
+cirp -n
+cirp -fec
+cirfraig
 cirp
-
+cirp -n

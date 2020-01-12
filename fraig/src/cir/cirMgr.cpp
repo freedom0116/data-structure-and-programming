@@ -54,7 +54,7 @@ enum CirParseError {
 /**************************************/
 static unsigned lineNo = 0;  // in printint, lineNo needs to ++
 static unsigned colNo  = 0;  // in printing, colNo needs to ++
-static char buf[1024];
+// static char buf[1024];
 static string errMsg;
 static int errInt;
 static CirGate *errGate;
@@ -146,10 +146,23 @@ parseError(CirParseError err)
    return false;
 }
 
+static int myId2Num(int id, bool phase)
+{
+   int Num = id * 2;
+   if(phase) Num++;
+   return Num;
+}
+
+static string isInvPatt(const CirGate* a, const CirGate* b)
+{
+   string o = "";
+   if(a->getPatt() != b->getPatt()) o = "!"; 
+   return o;
+}
+
 /**************************************************************/
 /*   class CirMgr member functions for circuit construction   */
 /**************************************************************/
-int myId2Num(int, bool);
 void resetValue()
 {
    lineNo = 0;
@@ -395,8 +408,8 @@ CirMgr::readSymbol(fstream& file, bool& stopRun)
       else if(I[0] == '\t') { errInt = 9; return parseError(ILLEGAL_WSPACE); }
       if(I[i] != ' ' && I[i] != '\t' && I[i] != '\0'){
          int ascii = (int)I[i];
-         if(I[i] < 33 || I[i] > 126){
-            errInt = stoi(to_string(I[i]));
+         if(ascii < 33 || ascii > 126){
+            errInt = stoi(to_string(ascii));
             return parseError(ILLEGAL_SYMBOL_NAME);
          }
       }
@@ -435,10 +448,10 @@ CirMgr::readSymbol(fstream& file, bool& stopRun)
                if(!myStr2Int(id, pinID))
                   { errMsg = "symbol index("+id+")"; return parseError(ILLEGAL_NUM); }
                if(setIO == 'i'){
-                  if(pinID > _piList.size()){ errMsg = "PI index"; errInt = pinID; return parseError(NUM_TOO_BIG); }
+                  if(pinID > (int)_piList.size()){ errMsg = "PI index"; errInt = pinID; return parseError(NUM_TOO_BIG); }
                   if(_piList[pinID]->getSymbols() != ""){ errMsg = "i"; errInt = pinID; return parseError(REDEF_SYMBOLIC_NAME); }
                }else if(setIO == 'o'){
-                  if(pinID > _poList.size()){ errMsg = "PO index"; errInt = pinID; return parseError(NUM_TOO_BIG); }
+                  if(pinID > (int)_poList.size()){ errMsg = "PO index"; errInt = pinID; return parseError(NUM_TOO_BIG); }
                   if(_poList[pinID]->getSymbols() != ""){ errMsg = "o"; errInt = pinID; return parseError(REDEF_SYMBOLIC_NAME); }                  
                }
             }
@@ -447,8 +460,8 @@ CirMgr::readSymbol(fstream& file, bool& stopRun)
    }
    if(sections.size() == 1) { errMsg = "symbolic name"; return parseError(MISSING_IDENTIFIER); }
    if(missNewLine) return parseError(MISSING_NEWLINE);
-   if(sections[0][0] == 'i')_piList[pinID]->setSymbols(sections[1]);
-   else if(sections[0][0] == 'o')_poList[pinID]->setSymbols(sections[1]);
+   if(sections[0][0] == 'i') _piList[pinID]->setSymbols(sections[1]);
+   else if(sections[0][0] == 'o') _poList[pinID]->setSymbols(sections[1]);
 
    lineNo++;
    return true;   
@@ -471,7 +484,7 @@ CirMgr::cutPiece(string& pharse, vector<string>& words, int wordNum, bool& missN
    int begin = 0, end = 0;
    bool prevSpace = false;
    for(int i = 0, s = pharse.length(); i <= s; i++){
-      if(words.size() == wordNum) {missNewLine = true; return true; }
+      if((int)words.size() == wordNum) { missNewLine = true; return true; }
       colNo = i;
       if(pharse[0] == ' ') return parseError(EXTRA_SPACE);
       else if(pharse[0] == '\t') { errInt = 9; return parseError(ILLEGAL_WSPACE); }
@@ -650,18 +663,25 @@ CirMgr::printFloatGates() const
 void
 CirMgr::printFECPairs() const
 {
+   for(int i = 0, s = _FECList.size(); i < s; i++){
+      cout << "[" << i << "]";
+      for(int j = 0, ks = _FECList[i].size(); j < ks; j++){
+         cout << " " << isInvPatt(_FECList[i][j], _FECList[i][0])
+          << _FECList[i][j]->getGateID();
+      } cout << endl;
+   }
 }
 
 void
 CirMgr::writeAag(ostream& outfile) const
 {
    // header
-   int M =  _totalList.size() - _poList.size() - 1, A = 0;
+   int M = _totalList.size() - _poList.size() - 1, A = 0;
    vector<Pin*> fanin;
    for(int i = 0, s = _dfsList.size(); i < s; i++){
       if(typeid(*_dfsList[i]) == typeid(AndGate)) A++;
    }
-   outfile << "aag " << M << " " << _piList.size() << " 0 " << _poList.size() << " " <<  A << endl;
+   outfile << "aag " << M << " " << _piList.size() << " 0 " << _poList.size() << " " << A << endl;
    // PI
    for(int i = 0, s = _piList.size(); i < s; i++){
       outfile << myId2Num(_piList[i]->getGateID(), _piList[i]->getInvPhase()) << endl;
@@ -683,11 +703,11 @@ CirMgr::writeAag(ostream& outfile) const
    // Symbols
    for(int i = 0, s = _piList.size(); i < s; i++){
       if(_piList[i]->getSymbols() != "")
-         outfile << "i" << _piList[i]->getGateID() << " " << _piList[i]->getSymbols() << endl;
+         outfile << "i" << i << " " << _piList[i]->getSymbols() << endl;
    }
    for(int i = 0, s = _poList.size(); i < s; i++){
       if(_poList[i]->getSymbols() != "")
-         outfile << "i" << _poList[i]->getGateID() << " " << _poList[i]->getSymbols() << endl;
+         outfile << "o" << i << " " << _poList[i]->getSymbols() << endl;
    }
    // Comment
    for(int i = 0, s = _commentList.size(); i < s; i++){
@@ -695,15 +715,43 @@ CirMgr::writeAag(ostream& outfile) const
    }
 }
 
-int myId2Num(int id, bool phase)
-{
-   int Num = id * 2;
-   if(phase) Num++;
-   return Num;
-}
-
 void
 CirMgr::writeGate(ostream& outfile, CirGate *g) const
 {
+   CirGate::setGlobalRef();
+   GateList total, pi, aig;
+   vector<Pin*> fanin;
+   size_t M = g->getGateID();
+   g->dfsTraversal(total);
+   for(int i = 0, s = total.size(); i < s; i++){
+      if(total[i]->getGateID() > (int)M) M = total[i]->getGateID();
+      if(typeid(*total[i]) == typeid(CirPiGate))
+         pi.push_back(total[i]);
+      else if(typeid(*total[i]) == typeid(AndGate))
+         aig.push_back(total[i]);
+   }
+   // Header
+   outfile << "aag " << M << " " << pi.size() << " 0 1 " <<  aig.size() << endl;
+   // PI
+   for(int i = 0, s = pi.size(); i < s; i++){
+      outfile << myId2Num(pi[i]->getGateID(), false) << endl;
+   }
+   // PO
+   outfile << myId2Num(g->getGateID(), false) << endl;
+   // AIG
+   for(int i = 0, s = aig.size(); i < s; i++){
+      outfile << myId2Num(aig[i]->getGateID(), false);
+      fanin = aig[i]->getFanin();
+      for(int j = 0, faninSize = fanin.size(); j < faninSize; j++){
+         outfile << " " << myId2Num(fanin[j]->getPin()->getGateID(), fanin[j]->getInvPhase());
+      } outfile << endl;
+   }
+   // Symbols
+   for(int i = 0, s = pi.size(); i < s; i++){
+      if(pi[i]->getSymbols() != "")
+         outfile << "i" << i << " " << pi[i]->getSymbols() << endl;
+   }
+   outfile << "o0 " << g->getGateID() << endl;
+   outfile << "c" << endl;
 }
 

@@ -1,4 +1,4 @@
-cirr ../tests.fraig/my05.aag
-cirp
-cirsweep
-cirp
+cirr ../tests.fraig/sim01.aag
+cirsim -f ../tests.fraig/mypatt.01
+cirp -fec
+cirf
